@@ -1,0 +1,16 @@
+# Игнорируем временные файлы
+*.tmp
+*.log
+
+# Игнорируем локальные данные (если будут)
+data/
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Игнорируем файлы IDE
+.vscode/
+.idea/
+
+# Игнорируем папку с данными Vagrant
+.vagrant/
