@@ -85,10 +85,16 @@ multipass exec $VM_NAME -- bash -c "$(declare -f install_packages); install_pack
 if [ "$NODE_TYPE" == "master" ]; then
     echo "[MASTER] Initializing cluster..."
 
-    # Инициализируем кластер
-    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+    # Получаем установленную версию kubeadm
+    K8S_VERSION=$(multipass exec $VM_NAME -- kubeadm version -o short)
+    echo "[MASTER] Using Kubernetes version: $K8S_VERSION"
+
+    # Инициализируем кластер с явным указанием версии
+	echo "Инициализируем кластер кубера ..."
+    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --kubernetes-version=$K8S_VERSION
 
     # Настраиваем kubectl
+	echo "Настраиваем kubectl ..."
     multipass exec $VM_NAME -- mkdir -p $HOME/.kube
     multipass exec $VM_NAME -- sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     multipass exec $VM_NAME -- sudo chown $(id -u):$(id -g) $HOME/.kube/config
