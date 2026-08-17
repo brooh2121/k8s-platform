@@ -87,11 +87,11 @@ if [ "$NODE_TYPE" == "master" ]; then
 
     # Получаем установленную версию kubeadm
     K8S_VERSION=$(multipass exec $VM_NAME -- kubeadm version -o short)
-    echo "[MASTER] Using Kubernetes version: $K8S_VERSION"
+    echo "[MASTER] Using Kubernetes version: v1.36.2"
 
     # Инициализируем кластер с явным указанием версии
 	echo "Инициализируем кластер кубера ..."
-    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --kubernetes-version=$K8S_VERSION
+    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --kubernetes-version=v1.36.2
 
     # Настраиваем kubectl
 	echo "Настраиваем kubectl ..."
