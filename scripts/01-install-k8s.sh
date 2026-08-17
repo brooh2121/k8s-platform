@@ -1,16 +1,14 @@
 #!/bin/bash
 # ============================================
-# Шаг 1: Установка Kubernetes на все ноды
+# Шаг 1: Установка Kubernetes и инициализация кластера
 # ============================================
 # Описание: Установка Docker, kubeadm, kubelet, kubectl.
 # Параметры: $1 - тип ноды (master или worker)
 # Автор: brooh2121
-# Дата: 2026-08-13
+# Дата: 2026-08-17
 # ============================================
 
 set -e
-
-# Отключаем интерактивные запросы для всех apt-команд
 export DEBIAN_FRONTEND=noninteractive
 
 NODE_TYPE=$1
@@ -20,78 +18,116 @@ if [ -z "$NODE_TYPE" ]; then
     exit 1
 fi
 
-echo "[STEP 1] Installing Kubernetes on $NODE_TYPE node..."
+echo "[STEP 1] Installing and configuring Kubernetes on $NODE_TYPE node..."
 
-# Определяем имя VM
 VM_NAME="k8s-$NODE_TYPE"
 
-# Создаем временный скрипт для установки на VM
-echo "Creating temporary install script on $VM_NAME..."
+# --- Функция установки пакетов (общая для всех нод) ---
+install_packages() {
+    echo "Installing packages on $(hostname)..."
 
-# Копируем сам этот скрипт на VM, но с помощью heredoc мы создадим новый файл
-multipass exec $VM_NAME -- bash -c "cat > /tmp/install-k8s.sh" <<'EOF'
-#!/bin/bash
-set -e
+    # Отключаем swap
+    sudo swapoff -a
+    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
-echo "Installing Kubernetes on $(hostname)..."
+    # Устанавливаем зависимости
+    sudo -E apt-get update
+    sudo -E apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
 
-# Отключаем swap
-sudo swapoff -a
-sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+    # Устанавливаем Docker
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo -E apt-get update
+    sudo -E apt-get install -y docker-ce docker-ce-cli containerd.io
+    sudo usermod -aG docker $USER
 
-# Устанавливаем зависимости
-sudo -E apt-get update
-sudo -E apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
+    # Устанавливаем kubeadm, kubelet, kubectl
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirror.yandex.ru/mirrors/pkgs.k8s.io/core/stable/v1.36/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    sudo -E apt-get update
+    sudo -E apt-get install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
 
-# Устанавливаем Docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo -E apt-get update
-sudo -E apt-get install -y docker-ce docker-ce-cli containerd.io
-sudo usermod -aG docker $USER
-
-# Устанавливаем kubeadm, kubelet, kubectl
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirror.yandex.ru/mirrors/pkgs.k8s.io/core/stable/v1.36/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo -E apt-get update
-sudo -E apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-
-# Включаем модули ядра для Kubernetes
-cat <<EOF2 | sudo tee /etc/modules-load.d/k8s.conf
+    # Включаем модули ядра
+    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
-EOF2
-sudo modprobe overlay
-sudo modprobe br_netfilter
+EOF
+    sudo modprobe overlay
+    sudo modprobe br_netfilter
 
-# Настраиваем sysctl
-cat <<EOF2 | sudo tee /etc/sysctl.d/k8s.conf
+    # Настраиваем sysctl
+    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
-EOF2
-sudo sysctl --system
-
-# Настраиваем containerd (драйвер cgroups)
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-sudo systemctl restart containerd
-sudo systemctl enable containerd
-
-# Включаем kubelet
-sudo systemctl enable kubelet
-
-echo "Installation complete on $(hostname)"
 EOF
+    sudo sysctl --system
 
-# Делаем скрипт исполняемым и запускаем его на VM
-echo "Running installation script on $VM_NAME..."
-multipass exec $VM_NAME -- chmod +x /tmp/install-k8s.sh
-multipass exec $VM_NAME -- sudo /tmp/install-k8s.sh
+    # Настраиваем containerd
+    sudo mkdir -p /etc/containerd
+    containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
+    sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+    sudo systemctl restart containerd
+    sudo systemctl enable containerd
 
-# Удаляем временный скрипт
-multipass exec $VM_NAME -- rm -f /tmp/install-k8s.sh
+    # Включаем kubelet
+    sudo systemctl enable kubelet
 
-echo "[STEP 1] Kubernetes installation completed on $VM_NAME"
+    echo "Packages installed on $(hostname)"
+}
+
+# --- Основная логика скрипта ---
+
+# Копируем функцию установки на VM
+multipass exec $VM_NAME -- bash -c "$(declare -f install_packages); install_packages"
+
+if [ "$NODE_TYPE" == "master" ]; then
+    echo "[MASTER] Initializing cluster..."
+
+    # Инициализируем кластер
+    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+
+    # Настраиваем kubectl
+    multipass exec $VM_NAME -- mkdir -p $HOME/.kube
+    multipass exec $VM_NAME -- sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    multipass exec $VM_NAME -- sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+    # Получаем токен для подключения воркеров
+    echo "[MASTER] Cluster initialized. Getting join token..."
+    JOIN_COMMAND=$(multipass exec $VM_NAME -- sudo kubeadm token create --print-join-command)
+    
+    # Сохраняем токен в файл на WSL для использования воркерами
+    echo "$JOIN_COMMAND" > /tmp/kubeadm-join-command
+    echo "[MASTER] Join command saved to /tmp/kubeadm-join-command"
+
+elif [ "$NODE_TYPE" == "worker" ]; then
+    echo "[WORKER] Waiting for master to initialize..."
+
+    # Ждем, пока мастер создаст файл с токеном (максимум 30 секунд)
+    for i in {1..30}; do
+        if [ -f /tmp/kubeadm-join-command ]; then
+            break
+        fi
+        echo "Waiting for join command (attempt $i)..."
+        sleep 2
+    done
+
+    if [ ! -f /tmp/kubeadm-join-command ]; then
+        echo "[ERROR] Join command file not found after 60 seconds. Exiting."
+        exit 1
+    fi
+
+    JOIN_COMMAND=$(cat /tmp/kubeadm-join-command)
+    echo "[WORKER] Connecting to cluster with: $JOIN_COMMAND"
+
+    # Подключаем воркер к кластеру
+    multipass exec $VM_NAME -- sudo $JOIN_COMMAND
+
+    echo "[WORKER] Connected to cluster successfully."
+else
+    echo "[ERROR] Unknown node type: $NODE_TYPE"
+    exit 1
+fi
+
+echo "[STEP 1] Completed on $VM_NAME"
