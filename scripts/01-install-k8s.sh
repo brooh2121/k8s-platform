@@ -91,17 +91,18 @@ if [ "$NODE_TYPE" == "master" ]; then
 
     # Настраиваем containerd на использование зеркала
     multipass exec $VM_NAME -- bash -c "
-        sudo mkdir -p /etc/containerd
-        cat <<EOF2 | sudo tee /etc/containerd/config.toml
-version = 2
-[plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"registry.k8s.io\"]
-  endpoint = [\"https://registry.vk-cloud.net\"]
+        sudo mkdir -p /etc/containerd/certs.d/registry.k8s.io
+        cat <<EOF2 | sudo tee /etc/containerd/certs.d/registry.k8s.io/hosts.toml
+server = "https://registry.k8s.io"
+[host."https://registry.aliyuncs.com/google_containers"]
+  capabilities = ["pull", "resolve"]
+  override_path = true
 EOF2
         sudo systemctl restart containerd
     "
 
     # Инициализируем кластер с указанием реестра
-    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.vk-cloud.net
+    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
 
     # Настраиваем kubectl
 	echo "Настраиваем kubectl ..."
