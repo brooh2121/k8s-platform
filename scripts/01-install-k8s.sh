@@ -89,8 +89,18 @@ if [ "$NODE_TYPE" == "master" ]; then
     K8S_VERSION=$(multipass exec $VM_NAME -- kubeadm version -o short)
     echo "[MASTER] Using Kubernetes version: $K8S_VERSION"
 
-    # Инициализируем кластер с явным указанием версии
-	echo "Инициализируем кластер кубера ..."
+    # Настраиваем containerd на использование зеркала
+    multipass exec $VM_NAME -- bash -c "
+        sudo mkdir -p /etc/containerd
+        cat <<EOF2 | sudo tee /etc/containerd/config.toml
+version = 2
+[plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"registry.k8s.io\"]
+  endpoint = [\"https://registry.vk-cloud.net\"]
+EOF2
+        sudo systemctl restart containerd
+    "
+
+    # Инициализируем кластер с указанием реестра
     multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.vk-cloud.net
 
     # Настраиваем kubectl
