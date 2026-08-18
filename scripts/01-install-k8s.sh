@@ -48,6 +48,14 @@ install_packages() {
     sudo -E apt-get install -y kubelet kubeadm kubectl
     sudo apt-mark hold kubelet kubeadm kubectl
 
+# Настраиваем kubelet на использование зеркала для pause-образа
+    sudo mkdir -p /var/lib/kubelet
+    cat <<EOF | sudo tee /var/lib/kubelet/config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+podInfraContainerImage: registry.aliyuncs.com/google_containers/pause:3.10.2
+EOF
+
     # Включаем модули ядра
     cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
