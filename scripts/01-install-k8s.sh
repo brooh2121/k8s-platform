@@ -91,7 +91,7 @@ if [ "$NODE_TYPE" == "master" ]; then
 
     # Инициализируем кластер с явным указанием версии
 	echo "Инициализируем кластер кубера ..."
-    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.yd.systems
+    multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.vk-cloud.net
 
     # Настраиваем kubectl
 	echo "Настраиваем kubectl ..."
