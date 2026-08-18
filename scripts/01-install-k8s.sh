@@ -122,7 +122,7 @@ EOF2
     echo "$JOIN_COMMAND" > /tmp/kubeadm-join-command
     echo "[MASTER] Join command saved to /tmp/kubeadm-join-command"
 
-elif [ "$NODE_NAME" =~ ^worker[0-9]+$ ]; then
+elif [[ "$NODE_NAME" =~ ^worker[0-9]+$ ]]; then
     NODE_TYPE="worker"
 	
     echo "[WORKER] Waiting for master to initialize..."
