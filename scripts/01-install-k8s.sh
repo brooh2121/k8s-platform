@@ -104,10 +104,14 @@ EOF2
     # Инициализируем кластер с указанием реестра
     multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
 
-    # Настраиваем kubectl
+	# Узнаём имя пользователя в VM (обычно ubuntu)
+    USER=$(multipass exec $VM_NAME -- whoami)
+	
+	# Настраиваем kubectl
 	echo "Настраиваем kubectl ..."
-    multipass exec $VM_NAME -- sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    multipass exec $VM_NAME -- sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    multipass exec $VM_NAME -- mkdir -p /home/$USER/.kube
+    multipass exec $VM_NAME -- sudo cp /etc/kubernetes/admin.conf /home/$USER/.kube/config
+    multipass exec $VM_NAME -- sudo chown $USER:$USER /home/$USER/.kube/config
 
     # Получаем токен для подключения воркеров
     echo "[MASTER] Cluster initialized. Getting join token..."
