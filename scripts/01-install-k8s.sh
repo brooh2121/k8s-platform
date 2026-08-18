@@ -11,16 +11,16 @@
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
-NODE_TYPE=$1
+NODE_NAME=$1
 
-if [ -z "$NODE_TYPE" ]; then
-    echo "[ERROR] Node type not specified. Usage: $0 [master|worker]"
+if [ -z "$NODE_NAME" ]; then
+    echo "[ERROR] Node name not specified. Usage: $0 [master|worker1|worker2]"
     exit 1
 fi
 
-echo "[STEP 1] Installing and configuring Kubernetes on $NODE_TYPE node..."
+echo "[STEP 1] Installing and configuring Kubernetes on $NODE_NAME (type: $NODE_TYPE)..."
 
-VM_NAME="k8s-$NODE_TYPE"
+VM_NAME="k8s-$NODE_NAME"
 
 # --- Функция установки пакетов (общая для всех нод) ---
 install_packages() {
@@ -82,7 +82,8 @@ EOF
 # Копируем функцию установки на VM
 multipass exec $VM_NAME -- bash -c "$(declare -f install_packages); install_packages"
 
-if [ "$NODE_TYPE" == "master" ]; then
+if [ "$NODE_NAME" == "master" ]; then
+    NODE_TYPE="master"
     echo "[MASTER] Initializing cluster..."
 
     # Получаем установленную версию kubeadm
@@ -121,8 +122,12 @@ EOF2
     echo "$JOIN_COMMAND" > /tmp/kubeadm-join-command
     echo "[MASTER] Join command saved to /tmp/kubeadm-join-command"
 
-elif [ "$NODE_TYPE" == "worker" ]; then
+elif [ "$NODE_NAME" == worker* ]; then
+    NODE_TYPE="worker"
+	
     echo "[WORKER] Waiting for master to initialize..."
+	
+	VM_NAME="k8s-$NODE_TYPE"
 
     # Ждем, пока мастер создаст файл с токеном (максимум 30 секунд)
     for i in {1..30}; do
@@ -146,7 +151,7 @@ elif [ "$NODE_TYPE" == "worker" ]; then
 
     echo "[WORKER] Connected to cluster successfully."
 else
-    echo "[ERROR] Unknown node type: $NODE_TYPE"
+    echo "[ERROR] Unknown node name: $NODE_NAME. Must be 'master' or 'workerX'."
     exit 1
 fi
 
