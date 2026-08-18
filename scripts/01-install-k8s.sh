@@ -126,8 +126,6 @@ elif [[ "$NODE_NAME" =~ ^worker[0-9]+$ ]]; then
     NODE_TYPE="worker"
 	
     echo "[WORKER] Waiting for master to initialize..."
-	
-	VM_NAME="k8s-$NODE_TYPE"
 
     # Ждем, пока мастер создаст файл с токеном (максимум 30 секунд)
     for i in {1..30}; do
