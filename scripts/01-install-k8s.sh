@@ -75,6 +75,16 @@ EOF
     sudo systemctl enable kubelet
 
     echo "Packages installed on $(hostname)"
+	
+	# Настраиваем зеркало для containerd (для всех нод)
+    sudo mkdir -p /etc/containerd/certs.d/registry.k8s.io
+    cat <<EOF | sudo tee /etc/containerd/certs.d/registry.k8s.io/hosts.toml
+    server = "https://registry.k8s.io"
+    [host."https://registry.aliyuncs.com/google_containers"]
+    capabilities = ["pull", "resolve"]
+    override_path = true
+EOF
+    sudo systemctl restart containerd
 }
 
 # --- Основная логика скрипта ---
@@ -89,18 +99,6 @@ if [ "$NODE_NAME" == "master" ]; then
     # Получаем установленную версию kubeadm
     K8S_VERSION=$(multipass exec $VM_NAME -- kubeadm version -o short)
     echo "[MASTER] Using Kubernetes version: $K8S_VERSION"
-
-    # Настраиваем containerd на использование зеркала
-    multipass exec $VM_NAME -- bash -c "
-        sudo mkdir -p /etc/containerd/certs.d/registry.k8s.io
-        cat <<EOF2 | sudo tee /etc/containerd/certs.d/registry.k8s.io/hosts.toml
-server = "https://registry.k8s.io"
-[host."https://registry.aliyuncs.com/google_containers"]
-  capabilities = ["pull", "resolve"]
-  override_path = true
-EOF2
-        sudo systemctl restart containerd
-    "
 
     # Инициализируем кластер с указанием реестра
     multipass exec $VM_NAME -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
