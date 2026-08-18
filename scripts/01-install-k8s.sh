@@ -106,7 +106,6 @@ EOF2
 
     # Настраиваем kubectl
 	echo "Настраиваем kubectl ..."
-    multipass exec $VM_NAME -- mkdir -p $HOME/.kube
     multipass exec $VM_NAME -- sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     multipass exec $VM_NAME -- sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
