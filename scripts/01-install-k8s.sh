@@ -83,7 +83,7 @@ server = "https://registry.k8s.io"
 EOF
 
     # Явно указываем sandbox_image
-    sudo sed -i 's|sandbox_image = ".*"|sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.10"|' /etc/containerd/config.toml
+    sudo sed -i 's|sandbox_image = ".*"|sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.10.2"|' /etc/containerd/config.toml
 
     sudo systemctl restart containerd
     sudo systemctl enable containerd
@@ -91,10 +91,10 @@ EOF
 
     # Предварительно скачиваем pause (очень желательно)
     echo "Pre-pulling pause image..."
-    sudo ctr -n k8s.io images pull registry.aliyuncs.com/google_containers/pause:3.10 || true
+    sudo ctr -n k8s.io images pull registry.aliyuncs.com/google_containers/pause:3.10.2 || true
     sudo ctr -n k8s.io images tag \
-        registry.aliyuncs.com/google_containers/pause:3.10 \
-        registry.k8s.io/pause:3.10 || true
+        registry.aliyuncs.com/google_containers/pause:3.10.2 \
+        registry.k8s.io/pause:3.10.2 || true
 
     echo "Packages installed on $(hostname)"
 }
