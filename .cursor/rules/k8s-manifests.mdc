@@ -1,0 +1,9 @@
+---
+description: Правила для Kubernetes-манифестов
+globs: ["manifests/**/*.{yaml,yml}", "**/*.{yaml,yml}"]
+alwaysApply: false
+---
+
+# Kubernetes
+- Манифесты хранить только в `manifests/`.
+- ... (добавьте свои правила по неймингу, labels, resource requests и т.д.)
