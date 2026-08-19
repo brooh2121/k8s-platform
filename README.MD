@@ -35,6 +35,6 @@
 
 ## Документация
 
-- `docs/01-project-overview.md` - обзор проекта и текущего состояния;
-- `docs/02-current-state.md` - описание уже выполненных шагов;
-- `docs/03-roadmap.md` - roadmap следующих этапов настройки кластера.
+- `docs/steps/01-project-overview.md` - обзор проекта и текущего состояния;
+- `docs/steps/02-current-state.md` - описание уже выполненных шагов;
+- `docs/steps/03-roadmap.md` - roadmap следующих этапов настройки кластера.
