@@ -33,7 +33,7 @@ for i in {1..72}; do
         break
     fi
 
-    echo "  Attempt $i/24: still waiting... ($NOT_READY pods not ready)"
+    echo "  Attempt $i/72: still waiting... ($NOT_READY pods not ready)"
     sleep 5
 done
 

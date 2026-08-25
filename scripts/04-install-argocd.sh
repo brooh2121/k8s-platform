@@ -33,9 +33,9 @@ multipass exec $VM_NAME -- sed -i 's|image:.*\(redis[:@][^ ]*\).*|image: redis:7
 echo "Checking Redis image after patch..."
 multipass exec $VM_NAME -- grep -n "image:.*redis" /tmp/argocd-install.yaml || true
 
-# 5. Устанавливаем ArgoCD
-echo "Installing ArgoCD from patched manifest..."
-multipass exec $VM_NAME -- kubectl apply -n $NAMESPACE -f /tmp/argocd-install.yaml
+# 5. Устанавливаем ArgoCD (с Server-Side Apply из-за большого CRD)
+echo "Installing ArgoCD from patched manifest (server-side)..."
+multipass exec $VM_NAME -- kubectl apply --server-side --force-conflicts -n $NAMESPACE -f /tmp/argocd-install.yaml
 
 # 6. Ждём, пока поды ArgoCD запустятся
 echo "Waiting for ArgoCD pods to be ready..."
