@@ -24,7 +24,7 @@ multipass exec $VM_NAME -- kubectl apply -f "$FLANNEL_URL"
 echo "Waiting for Flannel pods to become Ready..."
 
 # Ждём до 2 минут, пока все поды Flannel будут Ready
-for i in {1..24}; do
+for i in {1..72}; do
     NOT_READY=$(multipass exec $VM_NAME -- kubectl get pods -n kube-flannel \
         --no-headers 2>/dev/null | grep -v "Running\|Completed" | wc -l || echo 1)
 

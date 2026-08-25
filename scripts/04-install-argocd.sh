@@ -28,7 +28,10 @@ multipass exec $VM_NAME -- wget -q -O /tmp/argocd-install.yaml https://raw.githu
 
 # 4. Заменяем образ Redis на рабочий
 echo "Patching Redis image..."
-multipass exec $VM_NAME -- sed -i 's|image: redis:.*|image: redis:7.2-alpine|g' /tmp/argocd-install.yaml
+multipass exec $VM_NAME -- sed -i 's|image:.*\(redis[:@][^ ]*\).*|image: redis:7.2-alpine|g' /tmp/argocd-install.yaml
+
+echo "Checking Redis image after patch..."
+multipass exec $VM_NAME -- grep -n "image:.*redis" /tmp/argocd-install.yaml || true
 
 # 5. Устанавливаем ArgoCD
 echo "Installing ArgoCD from patched manifest..."
