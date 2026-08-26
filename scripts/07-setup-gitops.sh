@@ -20,10 +20,11 @@ echo "[STEP 7] Setting up GitOps cycle..."
 
 # 1. Устанавливаем ArgoCD CLI на мастер-ноду
 echo "Installing ArgoCD CLI..."
-multipass exec $VM_NAME -- bash -c "
-curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-chmod +x /usr/local/bin/argocd
-"
+multipass exec $VM_NAME -- bash -c '
+  curl -sSL -o /tmp/argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+  sudo install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd
+  rm -f /tmp/argocd-linux-amd64
+'
 
 # 2. Получаем пароль администратора
 echo "Getting admin password..."
