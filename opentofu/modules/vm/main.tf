@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    multipass = {
+      source = "todoroff/multipass"
+    }
+  }
+}
+
 resource "multipass_instance" "this" {
   name   = var.name
   image  = var.image
