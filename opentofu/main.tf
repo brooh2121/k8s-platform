@@ -1,4 +1,16 @@
 # opentofu/main.tf
+
+required_providers {
+    multipass = {
+      source  = "todoroff/multipass"
+      version = "~> 1.7"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
+}
+
 module "master_vm" {
   source = "./modules/vm"
   name   = "k8s-master"
