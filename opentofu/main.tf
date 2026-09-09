@@ -20,11 +20,24 @@ resource "multipass_instance" "master" {
   memory = "2G"
   disk   = "10G"
 
-  # Блок для выполнения скриптов после создания
+  cloud_init = <<-EOF
+    #cloud-config
+    ssh_authorized_keys:
+      - ${file("~/.ssh/id_rsa_tofu.pub")}
+  EOF
+
   provisioner "remote-exec" {
     inline = [
       "echo 'Hello from master node'"
     ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file("~/.ssh/id_rsa_tofu")
+      host        = self.ipv4[0]
+      timeout     = "2m"
+    }
   }
 }
 
