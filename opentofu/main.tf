@@ -1,6 +1,7 @@
 # opentofu/main.tf
 
-required_providers {
+terraform {
+  required_providers {
     multipass = {
       source  = "todoroff/multipass"
       version = "~> 1.7"
@@ -9,6 +10,7 @@ required_providers {
       source  = "hashicorp/null"
       version = "~> 3.0"
     }
+  }
 }
 
 module "master_vm" {
