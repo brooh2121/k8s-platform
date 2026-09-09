@@ -1,11 +1,14 @@
-# Вывод IP-адресов
+# opentofu/outputs.tf
+
 output "master_ip" {
-  value = multipass_instance.master.ipv4
+  value       = module.master_vm.ip
+  description = "IP address of the master node"
 }
 
 output "worker_ips" {
   value = [
-    multipass_instance.worker1.ipv4,
-    multipass_instance.worker2.ipv4
+    module.worker1_vm.ip,
+    module.worker2_vm.ip
   ]
+  description = "IP addresses of the worker nodes"
 }
