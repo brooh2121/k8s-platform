@@ -24,14 +24,14 @@ resource "null_resource" "install_k8s" {
   }
 
   provisioner "file" {
-    source      = "${path.root}/../scripts/01-install-k8s.sh"
-    destination = "/tmp/install-k8s.sh"
+    source      = "${path.root}/../scripts-tofu/install-k8s-node.sh"
+    destination = "/tmp/install-k8s-node.sh"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /tmp/install-k8s.sh",
-      "sudo /tmp/install-k8s.sh ${var.node_type}"
+      "chmod +x /tmp/install-k8s-node.sh",
+      "sudo /tmp/install-k8s-node.sh ${var.node_type} ${var.master_ip}"
     ]
   }
 }
