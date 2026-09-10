@@ -24,7 +24,7 @@ resource "null_resource" "install_k8s" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/../../scripts/01-install-k8s.sh"
+    source      = "${path.root}/../scripts/01-install-k8s.sh"
     destination = "/tmp/install-k8s.sh"
   }
 
