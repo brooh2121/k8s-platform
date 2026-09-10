@@ -27,6 +27,12 @@ resource "null_resource" "install_k8s" {
     source      = "${path.root}/../scripts-tofu/install-k8s-node.sh"
     destination = "/tmp/install-k8s-node.sh"
   }
+  
+  # Копируем приватный ключ (только для воркеров)
+  provisioner "file" {
+    source      = "~/.ssh/id_rsa_tofu"
+    destination = "/home/ubuntu/.ssh/id_rsa_tofu"
+  }
 
   provisioner "remote-exec" {
     inline = [

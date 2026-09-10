@@ -46,7 +46,7 @@ if [ "$NODE_TYPE" == "master" ]; then
     sudo kubeadm token create --print-join-command > /tmp/join-command
     sudo chmod 644 /tmp/join-command
 elif [ "$NODE_TYPE" == "worker" ]; then
-    # Подключение к мастеру
-    JOIN_CMD=$(ssh -o StrictHostKeyChecking=no ubuntu@$MASTER_IP 'sudo cat /tmp/join-command')
+    # Подключение к мастеру с использованием скопированного ключа
+    JOIN_CMD=$(ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/id_rsa_tofu ubuntu@$MASTER_IP 'sudo cat /tmp/join-command')
     sudo $JOIN_CMD
 fi
