@@ -13,7 +13,12 @@ resource "multipass_instance" "this" {
   memory = var.memory
   disk   = var.disk
 
-  cloud_init = var.cloud_init != "" ? var.cloud_init : null
+  # Добавляем cloud-init с вашим публичным ключом
+  cloud_init = <<-EOF
+    #cloud-config
+    ssh_authorized_keys:
+      - ${file("~/.ssh/id_rsa_tofu.pub")}
+  EOF
 }
 
 output "ip" {
