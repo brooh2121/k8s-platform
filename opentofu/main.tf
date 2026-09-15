@@ -37,6 +37,14 @@ module "worker2_vm" {
   disk   = "10G"
 }
 
+resource "null_resource" "master_ready" {
+  depends_on = [module.k8s_master]
+
+  provisioner "local-exec" {
+    command = "multipass exec k8s-master -- sudo cat /tmp/join-command > ${path.root}/join-command.txt"
+  }
+}
+
 # Установка Kubernetes на мастер
 module "k8s_master" {
   source     = "./modules/k8s-node"
@@ -46,11 +54,13 @@ module "k8s_master" {
 }
 
 # Установка Kubernetes на воркеры
+/*
 module "k8s_worker1" {
   source     = "./modules/k8s-node"
   vm_ip      = module.worker1_vm.ip
   node_type  = "worker"
   master_ip  = module.master_vm.ip
+  join_command = file("${path.root}/join-command.txt")
   depends_on = [module.worker1_vm, module.k8s_master]
 }
 
@@ -59,5 +69,7 @@ module "k8s_worker2" {
   vm_ip      = module.worker2_vm.ip
   node_type  = "worker"
   master_ip  = module.master_vm.ip
+  join_command = file("${path.root}/join-command.txt")
   depends_on = [module.worker2_vm, module.k8s_master]
 }
+*/

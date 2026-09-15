@@ -47,6 +47,5 @@ if [ "$NODE_TYPE" == "master" ]; then
     sudo chmod 644 /tmp/join-command
 elif [ "$NODE_TYPE" == "worker" ]; then
     # Подключение к мастеру с использованием скопированного ключа
-    JOIN_CMD=$(ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/id_rsa_tofu ubuntu@$MASTER_IP 'sudo cat /tmp/join-command')
-    sudo $JOIN_CMD
+    sudo $JOIN_COMMAND
 fi

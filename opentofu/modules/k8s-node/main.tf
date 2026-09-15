@@ -37,6 +37,7 @@ resource "null_resource" "install_k8s" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/install-k8s-node.sh",
+	  "chmod 600 /home/ubuntu/.ssh/id_rsa_tofu",
       "sudo /tmp/install-k8s-node.sh ${var.node_type} ${var.master_ip}"
     ]
   }
