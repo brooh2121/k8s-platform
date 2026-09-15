@@ -23,7 +23,8 @@
 - установка `ArgoCD`;
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
-- преднастройка GitOps: репозиторий `argocd-apps` и Application `nginx`.
+- преднастройка GitOps: репозиторий `argocd-apps` и Application `nginx`;
+- черновик IaC в `terraform/` и рабочий стек OpenTofu в `opentofu/`.
 
 Ближайшая работа: связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.
 
@@ -48,6 +49,8 @@
 
 Репозиторий организован по шагам:
 - каждый скрипт в `scripts/` отвечает за отдельный этап;
+- скрипты для провижининга через OpenTofu лежат в `scripts-tofu/`;
+- IaC лежит в `opentofu/` (основной путь) и `terraform/` (ранний эксперимент);
 - манифесты Kubernetes лежат в `manifests/`;
 - документация о текущем состоянии и дальнейших шагах хранится в `docs/steps/`.
 

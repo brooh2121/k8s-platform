@@ -14,7 +14,8 @@
 - установка `ArgoCD`;
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
-- преднастройка GitOps: репозиторий и Application `nginx` в `ArgoCD`.
+- преднастройка GitOps: репозиторий и Application `nginx` в `ArgoCD`;
+- черновик IaC: `terraform/` для VM и `opentofu/` для VM плюс установка Kubernetes.
 
 Следующие этапы развития:
 - связка с GitLab CI/CD;
@@ -25,6 +26,9 @@
 ## Структура репозитория
 
 - `scripts/` - пошаговые bash-скрипты развертывания и обслуживания;
+- `scripts-tofu/` - скрипты, которые OpenTofu копирует внутрь VM;
+- `opentofu/` - IaC для VM и установки Kubernetes;
+- `terraform/` - ранний эксперимент: только создание VM;
 - `manifests/` - Kubernetes-манифесты;
 - `docs/steps/` - документация по текущему состоянию, шагам и roadmap проекта.
 
@@ -48,4 +52,6 @@
 - `docs/steps/04-install-argocd.md` - установка `ArgoCD`;
 - `docs/steps/05-install-ingress-controller.md` - установка Ingress-контроллера;
 - `docs/steps/06-create-argocd-ingress.md` - Ingress для `ArgoCD`;
-- `docs/steps/07-setup-gitops.md` - настройка GitOps через `ArgoCD` CLI.
+- `docs/steps/07-setup-gitops.md` - настройка GitOps через `ArgoCD` CLI;
+- `docs/steps/08-opentofu.md` - OpenTofu: VM и установка Kubernetes;
+- `docs/steps/09-terraform-experiment.md` - ранний Terraform-черновик для VM.
