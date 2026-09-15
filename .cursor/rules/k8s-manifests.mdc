@@ -1,9 +1,25 @@
 ---
-description: Правила для Kubernetes-манифестов
-globs: ["manifests/**/*.{yaml,yml}", "**/*.{yaml,yml}"]
+description: Стиль и правила для Kubernetes-манифестов (YAML)
+globs: ["manifests/**/*.yaml", "manifests/**/*.yml", "**/*.yaml"]
 alwaysApply: false
 ---
 
-# Kubernetes
-- Манифесты хранить только в `manifests/`.
-- ... (добавьте свои правила по неймингу, labels, resource requests и т.д.)
+# Стиль кода (Kubernetes Manifests)
+
+## Общие принципы
+- Все манифесты размещайте в папке `manifests/`.
+- Для каждого ресурса указывайте `apiVersion`, `kind`, `metadata.name`.
+- Используйте `namespace` явно, если ресурс не в `default`.
+
+## Форматирование
+- Отступы: 2 пробела.
+- Не используйте табы.
+- Комментарии — на русском, только ASCII.
+
+## Безопасность
+- Не храните секреты в открытом виде. Используйте `Secret` или Vault.
+- Для `ServiceAccount` указывайте минимально необходимые права (RBAC).
+
+## Именование
+- Имена ресурсов: `kebab-case` (например, `argocd-server`).
+- Метки: `app`, `tier`, `environment`.

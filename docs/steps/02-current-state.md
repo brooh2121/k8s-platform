@@ -2,7 +2,7 @@
 
 ## Что уже реализовано
 
-На текущий момент в проекте выполнены базовые шаги подготовки кластера Kubernetes и первые платформенные компоненты: `ArgoCD` и Ingress.
+На текущий момент в проекте выполнены базовые шаги подготовки кластера Kubernetes, установка `ArgoCD` и Ingress, а также первичная настройка GitOps.
 
 ### Шаг 0. Создание виртуальных машин
 
@@ -70,6 +70,17 @@
 
 Подробности: `docs/steps/06-create-argocd-ingress.md`.
 
+### Шаг 7. Настройка GitOps
+
+Скрипт `scripts/07-setup-gitops.sh` выполняет:
+- установку `argocd` CLI на master-ноду;
+- login в `ArgoCD` по IP `LoadBalancer` или NodePort;
+- подключение репозитория `https://github.com/brooh2121/argocd-apps.git`;
+- создание Application `nginx` в namespace `default`;
+- разовую синхронизацию без autosync.
+
+Подробности: `docs/steps/07-setup-gitops.md`.
+
 ## Что важно помнить
 
 - проект пока ориентирован на локальный стенд и учебный сценарий;
@@ -79,6 +90,6 @@
 
 ## Текущая точка остановки
 
-На данный момент выполнены установка `ArgoCD`, Ingress-контроллера и Ingress для UI. `ArgoCD` пока только установлен: репозитории, Applications и CI еще не подключены.
+На данный момент `ArgoCD` установлен, UI открыт через Ingress, подключен Git-репозиторий и создано Application `nginx`. Автосинхронизация выключена, GitLab CI/CD еще не подключен.
 
-Следующий блок работы - преднастройка `ArgoCD` и связка с GitLab CI/CD (GitLab Actions). После этого - `RBAC` и `HashiCorp Vault`.
+Следующий блок работы - связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.

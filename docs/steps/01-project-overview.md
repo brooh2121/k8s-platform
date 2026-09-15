@@ -22,9 +22,10 @@
 - создание манифеста или конфигурации IP-пула для сервисов типа `LoadBalancer`;
 - установка `ArgoCD`;
 - установка `NGINX Ingress Controller`;
-- публикация UI `ArgoCD` через Ingress на `argocd.local`.
+- публикация UI `ArgoCD` через Ingress на `argocd.local`;
+- преднастройка GitOps: репозиторий `argocd-apps` и Application `nginx`.
 
-Ближайшая работа: преднастройка `ArgoCD` и связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.
+Ближайшая работа: связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.
 
 ## Базовая архитектура стенда
 
@@ -40,7 +41,8 @@
 
 Платформенный слой на текущем этапе:
 - `ArgoCD` в namespace `argocd`;
-- Ingress `argocd-ingress` для доступа по имени `argocd.local`.
+- Ingress `argocd-ingress` для доступа по имени `argocd.local`;
+- GitOps: репозиторий `https://github.com/brooh2121/argocd-apps.git` и Application `nginx`.
 
 ## Принцип работы репозитория
 

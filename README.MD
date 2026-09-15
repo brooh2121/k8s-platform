@@ -13,10 +13,11 @@
 - установка и базовая настройка `MetalLB`;
 - установка `ArgoCD`;
 - установка `NGINX Ingress Controller`;
-- публикация UI `ArgoCD` через Ingress на `argocd.local`.
+- публикация UI `ArgoCD` через Ingress на `argocd.local`;
+- преднастройка GitOps: репозиторий и Application `nginx` в `ArgoCD`.
 
 Следующие этапы развития:
-- преднастройка `ArgoCD` и связка с GitLab CI/CD (GitLab Actions);
+- связка с GitLab CI/CD;
 - настройка `RBAC`;
 - установка `HashiCorp Vault`;
 - автоматизация всего процесса в одном пайплайне.
@@ -36,7 +37,8 @@
 5. `scripts/04-install-argocd.sh` - установка `ArgoCD`.
 6. `scripts/05-install-ingress-controller.sh` - установка `NGINX Ingress Controller`.
 7. `scripts/06-create-argocd-ingress.sh` - Ingress для UI `ArgoCD`.
-8. `scripts/99-cleanup.sh` - очистка локального стенда.
+8. `scripts/07-setup-gitops.sh` - GitOps: репозиторий и Application в `ArgoCD`.
+9. `scripts/99-cleanup.sh` - очистка локального стенда.
 
 ## Документация
 
@@ -45,4 +47,5 @@
 - `docs/steps/03-roadmap.md` - roadmap следующих этапов настройки кластера;
 - `docs/steps/04-install-argocd.md` - установка `ArgoCD`;
 - `docs/steps/05-install-ingress-controller.md` - установка Ingress-контроллера;
-- `docs/steps/06-create-argocd-ingress.md` - Ingress для `ArgoCD`.
+- `docs/steps/06-create-argocd-ingress.md` - Ingress для `ArgoCD`;
+- `docs/steps/07-setup-gitops.md` - настройка GitOps через `ArgoCD` CLI.
