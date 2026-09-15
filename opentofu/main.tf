@@ -54,7 +54,6 @@ module "k8s_master" {
 }
 
 # Установка Kubernetes на воркеры
-/*
 module "k8s_worker1" {
   source     = "./modules/k8s-node"
   vm_ip      = module.worker1_vm.ip
@@ -72,4 +71,3 @@ module "k8s_worker2" {
   join_command = file("${path.root}/join-command.txt")
   depends_on = [module.worker2_vm, module.k8s_master]
 }
-*/

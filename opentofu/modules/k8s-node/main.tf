@@ -24,7 +24,7 @@ resource "null_resource" "install_k8s" {
   }
 
   provisioner "file" {
-    source      = "${path.root}/../scripts-tofu/install-k8s-node.sh"
+    source      = "/home/dismas/k8s-platform/scripts-tofu/install-k8s-node.sh"
     destination = "/tmp/install-k8s-node.sh"
   }
   
