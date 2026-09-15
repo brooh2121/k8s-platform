@@ -52,6 +52,31 @@ resource "null_resource" "master_ready" {
   }
 }
 
+resource "null_resource" "install_flannel" {
+  depends_on = [module.k8s_master]
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file("${path.root}/../scripts-tofu/install-flannel.sh")
+    destination = "/tmp/install-flannel.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-flannel.sh",
+      "chmod +x /tmp/install-flannel.sh",
+      "sudo /tmp/install-flannel.sh"
+    ]
+  }
+}
+
 # Установка Kubernetes на мастер
 module "k8s_master" {
   source              = "./modules/k8s-node"
