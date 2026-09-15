@@ -79,11 +79,12 @@
 
 Уже есть:
 - создание VM через провайдер Multipass;
-- установка Kubernetes на ноды через OpenTofu и `scripts-tofu/install-k8s-node.sh`.
+- установка Kubernetes на ноды через OpenTofu и `scripts-tofu/install-k8s-node.sh`;
+- установка `Flannel` через `scripts-tofu/install-flannel.sh`.
 
 Еще нет:
 - параметризации корневого модуля;
-- установки `Flannel`, `MetalLB` и платформенных компонентов через IaC;
+- установки `MetalLB` и платформенных компонентов через IaC;
 - одного пайплайна на весь стенд.
 
 Цель этапа:

@@ -84,17 +84,17 @@
 ### OpenTofu и Terraform
 
 Параллельно bash-скриптам появился IaC-контур:
-- `opentofu/` создает VM и ставит Kubernetes через `scripts-tofu/install-k8s-node.sh`;
+- `opentofu/` создает VM, ставит Kubernetes и CNI `Flannel`;
 - `terraform/` только создает те же три VM без установки Kubernetes.
 
-Подробности: `docs/terraform/01-opentofu.md` и `docs/terraform/02-terraform-experiment.md`.
+Подробности: `docs/terraform/01-opentofu.md`, `docs/terraform/03-flannel.md` и `docs/terraform/02-terraform-experiment.md`.
 
 ## Что важно помнить
 
 - проект пока ориентирован на локальный стенд и учебный сценарий;
 - многие параметры в скриптах пока заданы напрямую;
 - запуск выполняется по шагам, а не через единый orchestration-пайплайн;
-- параллельно развивается IaC в `opentofu/`, он пока не заменяет скрипты шагов 2 и далее;
+- параллельно развивается IaC в `opentofu/`, он пока не заменяет скрипты шагов 3 и далее;
 - часть конфигурации генерируется динамически во время выполнения скриптов.
 
 ## Текущая точка остановки

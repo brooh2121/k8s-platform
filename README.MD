@@ -15,7 +15,7 @@
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
 - преднастройка GitOps: репозиторий и Application `nginx` в `ArgoCD`;
-- черновик IaC: `terraform/` для VM и `opentofu/` для VM плюс установка Kubernetes.
+- черновик IaC: `terraform/` для VM и `opentofu/` для VM, Kubernetes и Flannel.
 
 Следующие этапы развития:
 - связка с GitLab CI/CD;
@@ -56,5 +56,6 @@
 - `docs/steps/07-setup-gitops.md` - настройка GitOps через `ArgoCD` CLI.
 
 Документация IaC:
-- `docs/terraform/01-opentofu.md` - OpenTofu: VM и установка Kubernetes;
-- `docs/terraform/02-terraform-experiment.md` - ранний Terraform-черновик для VM.
+- `docs/terraform/01-opentofu.md` - OpenTofu: VM, Kubernetes и Flannel;
+- `docs/terraform/02-terraform-experiment.md` - ранний Terraform-черновик для VM;
+- `docs/terraform/03-flannel.md` - установка Flannel через OpenTofu.
