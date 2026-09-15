@@ -46,6 +46,25 @@ if [ "$NODE_TYPE" == "master" ]; then
     sudo kubeadm token create --print-join-command > /tmp/join-command
     sudo chmod 644 /tmp/join-command
 elif [ "$NODE_TYPE" == "worker" ]; then
-    # Подключение к мастеру с использованием скопированного ключа
+    if [ -z "$MASTER_IP" ]; then
+        echo "[ERROR] MASTER_IP is empty. Worker cannot join the cluster."
+        exit 1
+    fi
+
+    KEY_FILE="/home/ubuntu/.ssh/id_rsa_tofu"
+    if [ ! -f "$KEY_FILE" ]; then
+        echo "[ERROR] SSH key $KEY_FILE not found on worker."
+        exit 1
+    fi
+
+    echo "Fetching join command from master $MASTER_IP..."
+    JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$KEY_FILE" ubuntu@"$MASTER_IP" "cat /tmp/join-command")
+
+    if [ -z "$JOIN_COMMAND" ]; then
+        echo "[ERROR] Join command from master is empty."
+        exit 1
+    fi
+
+    echo "Joining cluster with: $JOIN_COMMAND"
     sudo $JOIN_COMMAND
 fi

@@ -61,7 +61,8 @@ tofu apply
 - пишет join-команду в `/tmp/join-command`.
 
 На worker:
-- должен выполнить join-команду. В текущей версии скрипта переменная `JOIN_COMMAND` не заполняется, это известный пробел.
+- по SSH забирает `/tmp/join-command` с master (ключ `id_rsa_tofu`);
+- выполняет `kubeadm join`.
 
 ## Windows Git + WSL apply
 
