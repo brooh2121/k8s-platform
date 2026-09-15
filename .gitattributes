@@ -1,0 +1,3 @@
+# Скрипты катятся из Windows-checkout в WSL/Ubuntu. CRLF ломает bash.
+*.sh text eol=lf
+*.tf text eol=lf

@@ -63,12 +63,35 @@ tofu apply
 На worker:
 - должен выполнить join-команду. В текущей версии скрипта переменная `JOIN_COMMAND` не заполняется, это известный пробел.
 
+## Windows Git + WSL apply
+
+Git-рабочая копия лежит на Windows, `tofu apply` запускается в WSL. Это два разных мира путей:
+
+- Windows: `E:\git_works\k8s-platform\k8s-platform\...`
+- WSL: `/mnt/e/git_works/k8s-platform/k8s-platform/...`
+- home в WSL: `/home/<user>/...` - это уже не git-копия
+
+Поэтому путь `/home/dismas/k8s-platform/scripts-tofu/install-k8s-node.sh` не работает: репозиторий там не лежит. Относительный `source` тоже ломается, если provisioner резолвит путь не так, как WSL видит `/mnt/e`.
+
+Как сделано сейчас:
+- корень репозитория считается через `abspath("${path.root}/../scripts-tofu/install-k8s-node.sh")`;
+- скрипт читается функцией `file()` и передается в VM через `provisioner "file" { content = ... }`;
+- после копирования с файла снимается CR (`sed`), потому что Git на Windows часто хранит `.sh` как CRLF, а bash на Ubuntu от этого падает.
+
+`tofu apply` нужно запускать из WSL в каталоге Windows-checkout, например:
+
+```
+cd /mnt/e/git_works/k8s-platform/k8s-platform/opentofu
+tofu apply
+```
+
+Ключи `id_rsa_tofu` должны быть в **WSL home** (`~/.ssh/`), потому что `~` раскрывается уже в Linux. Ключ из `C:\Users\...\.ssh` WSL сам не подхватит, пока его туда не скопировать или не пробросить через agent.
+
 ## Предварительные условия
 
-- установлены `OpenTofu` и `Multipass`;
-- есть ключи `~/.ssh/id_rsa_tofu` и `~/.ssh/id_rsa_tofu.pub`;
-- SSH-agent знает приватный ключ (`agent = true`);
-- путь к скрипту в модуле `k8s-node` сейчас абсолютный: `/home/dismas/k8s-platform/scripts-tofu/install-k8s-node.sh`. На другой машине apply не найдет файл, пока путь не параметризуют.
+- установлены `OpenTofu` и `Multipass`, команда `multipass` доступна из WSL;
+- есть ключи `~/.ssh/id_rsa_tofu` и `~/.ssh/id_rsa_tofu.pub` именно в WSL;
+- SSH-agent в WSL знает приватный ключ (`agent = true`).
 
 ## Результат
 
@@ -82,6 +105,7 @@ tofu apply
 
 ## Важные замечания
 
+- если скрипт не копируется на master, в логе apply должен быть абсолютный WSL-путь вида `/mnt/e/.../scripts-tofu/install-k8s-node.sh`, а не `/home/...` и не `E:\...`;
 - CPU, память и диск в корневом `main.tf` пока захардкожены, корневой `variables.tf` пустой;
 - у модулей нет полного набора `main.tf` + `variables.tf` + `outputs.tf` по правилу HCL: часть переменных и output лежит в `main.tf`;
 - приватный ключ копируется на VM, это учебный прием, ключ в git коммитить нельзя;

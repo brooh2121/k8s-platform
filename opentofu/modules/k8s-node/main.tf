@@ -1,4 +1,8 @@
 # modules/k8s-node/main.tf
+# Копирует install-k8s-node.sh на VM по SSH и запускает установку Kubernetes.
+# Скрипт читается процессом tofu (WSL), поэтому нужен абсолютный путь к Windows-checkout,
+# обычно /mnt/e/git_works/k8s-platform/k8s-platform/scripts-tofu/install-k8s-node.sh.
+
 variable "vm_ip" {
   description = "IP address of the VM"
   type        = string
@@ -13,31 +17,38 @@ variable "node_type" {
   }
 }
 
-# Используем null_resource, чтобы выполнить скрипт на удалённой VM
 resource "null_resource" "install_k8s" {
+  triggers = {
+    vm_ip      = var.vm_ip
+    node_type  = var.node_type
+    script_sha = filesha256(var.install_script_path)
+  }
+
   connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    host        = var.vm_ip
-    agent       = true
-    timeout     = "10m"
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = var.vm_ip
+    agent   = true
+    timeout = "10m"
+  }
+
+  # content + file() читает скрипт в память tofu. Так надежнее, чем source:
+  # source зависит от того, как provisioner резолвит путь (Win vs WSL).
+  provisioner "file" {
+    content     = file(var.install_script_path)
+    destination = "/tmp/install-k8s-node.sh"
   }
 
   provisioner "file" {
-    source      = "/home/dismas/k8s-platform/scripts-tofu/install-k8s-node.sh"
-    destination = "/tmp/install-k8s-node.sh"
-  }
-  
-  # Копируем приватный ключ (только для воркеров)
-  provisioner "file" {
-    source      = "~/.ssh/id_rsa_tofu"
+    content     = file(var.ssh_private_key_path)
     destination = "/home/ubuntu/.ssh/id_rsa_tofu"
   }
 
   provisioner "remote-exec" {
     inline = [
+      "sed -i 's/\\r$//' /tmp/install-k8s-node.sh",
       "chmod +x /tmp/install-k8s-node.sh",
-	  "chmod 600 /home/ubuntu/.ssh/id_rsa_tofu",
+      "chmod 600 /home/ubuntu/.ssh/id_rsa_tofu",
       "sudo /tmp/install-k8s-node.sh ${var.node_type} ${var.master_ip}"
     ]
   }
