@@ -4,6 +4,8 @@
 
 Скрипт на ноде: `scripts-tofu/install-k8s-node.sh`
 
+Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.
+
 ## Назначение
 
 Это второй способ поднять базовый кластер: не через пошаговые `scripts/00` и `scripts/01`, а через OpenTofu. Стек создает три VM в `Multipass` и ставит Kubernetes на master и worker-ноды по SSH.
@@ -111,4 +113,4 @@ tofu apply
 - у модулей нет полного набора `main.tf` + `variables.tf` + `outputs.tf` по правилу HCL: часть переменных и output лежит в `main.tf`;
 - приватный ключ копируется на VM, это учебный прием, ключ в git коммитить нельзя;
 - `join-command.txt` содержит секрет кластера, в репозиторий его класть не нужно;
-- каталог `terraform/` - более ранний эксперимент, только создание VM без установки Kubernetes. См. `docs/steps/09-terraform-experiment.md`.
+- каталог `terraform/` - более ранний эксперимент, только создание VM без установки Kubernetes. См. `docs/terraform/02-terraform-experiment.md`.

@@ -87,7 +87,7 @@
 - `opentofu/` создает VM и ставит Kubernetes через `scripts-tofu/install-k8s-node.sh`;
 - `terraform/` только создает те же три VM без установки Kubernetes.
 
-Подробности: `docs/steps/08-opentofu.md` и `docs/steps/09-terraform-experiment.md`.
+Подробности: `docs/terraform/01-opentofu.md` и `docs/terraform/02-terraform-experiment.md`.
 
 ## Что важно помнить
 
