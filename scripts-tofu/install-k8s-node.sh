@@ -36,12 +36,17 @@ sudo systemctl restart containerd
 if [ "$NODE_TYPE" == "master" ]; then
     # Инициализация кластера
     sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
-    
-    # Настройка kubectl
-    mkdir -p $HOME/.kube
-    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    sudo chown $(id -u):$(id -g) $HOME/.kube/config
-    
+
+    # Настройка kubectl для пользователя ubuntu (и root)
+    mkdir -p /home/ubuntu/.kube
+    sudo cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+    sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
+
+    # Также настраиваем для root (на случай, если команды запускаются от root)
+    mkdir -p /root/.kube
+    sudo cp -i /etc/kubernetes/admin.conf /root/.kube/config
+    sudo chown root:root /root/.kube/config
+
     # Сохраняем команду join
     sudo kubeadm token create --print-join-command > /tmp/join-command
     sudo chmod 644 /tmp/join-command
