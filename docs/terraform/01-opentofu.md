@@ -59,7 +59,7 @@ tofu apply
 
 На master:
 - `kubeadm init` с Pod CIDR `10.244.0.0/16` и реестром `registry.aliyuncs.com/google_containers`;
-- настраивает `kubectl`;
+- кладет kubeconfig и для `ubuntu` (`/home/ubuntu/.kube/config`), и для `root` (`/root/.kube/config`). Скрипт часто идет от root через `sudo`, а `multipass exec` по умолчанию работает как `ubuntu`;
 - пишет join-команду в `/tmp/join-command`.
 
 На worker:
@@ -100,11 +100,19 @@ tofu apply
 
 После успешного apply:
 - три VM в `Multipass`;
-- control plane инициализирован;
+- control plane инициализирован, worker-ноды присоединены;
+- `multipass exec k8s-master -- kubectl get nodes` показывает все ноды;
+- ноды будут в `NotReady`, пока не установлен CNI (`Flannel`). Это ожидаемо: OpenTofu ставит только kubeadm-кластер;
 - в `opentofu/outputs` доступны IP-адреса;
 - файл `opentofu/join-command.txt` содержит команду join (если master отработал).
 
-Сеть Pod (`Flannel`) и `MetalLB` этим стеком не ставятся. Их по-прежнему накатывают скрипты `scripts/02` и `scripts/03`.
+Проверка:
+
+```
+multipass exec k8s-master -- kubectl get nodes
+```
+
+Чтобы ноды стали `Ready`, дальше нужен bash-шаг `scripts/02-install-flannel.sh`. `MetalLB` и платформенные компоненты тоже пока ставятся скриптами `scripts/03` и далее.
 
 ## Важные замечания
 
