@@ -16,7 +16,12 @@ terraform {
 # Git на Windows, tofu apply в WSL: path.root будет /mnt/<диск>/.../opentofu,
 # а не /home/dismas/k8s-platform и не E:\git_works\...
 locals {
-  install_script_path  = abspath("${path.root}/../scripts-tofu/install-k8s-node.sh")
+  scripts_dir          = abspath("${path.root}/../scripts-tofu")
+  install_script_path  = "${local.scripts_dir}/install-k8s-node.sh"
+  flannel_script_path  = "${local.scripts_dir}/install-flannel.sh"
+  metallb_script_path  = "${local.scripts_dir}/install-metallb.sh"
+  ingress_script_path  = "${local.scripts_dir}/install-ingress.sh"
+  argocd_script_path   = "${local.scripts_dir}/install-argocd.sh"
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
 }
 
@@ -55,6 +60,13 @@ resource "null_resource" "master_ready" {
 resource "null_resource" "install_flannel" {
   depends_on = [module.k8s_master]
 
+  # Без triggers provisioner выполняется только при создании ресурса.
+  # После пересоздания VM tofu считает Flannel уже установленным и скрипт не копирует.
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.flannel_script_path)
+  }
+
   connection {
     type    = "ssh"
     user    = "ubuntu"
@@ -64,7 +76,7 @@ resource "null_resource" "install_flannel" {
   }
 
   provisioner "file" {
-    content     = file("${path.root}/../scripts-tofu/install-flannel.sh")
+    content     = file(local.flannel_script_path)
     destination = "/tmp/install-flannel.sh"
   }
 
@@ -72,7 +84,7 @@ resource "null_resource" "install_flannel" {
     inline = [
       "sed -i 's/\\r$//' /tmp/install-flannel.sh",
       "chmod +x /tmp/install-flannel.sh",
-      "sudo /tmp/install-flannel.sh"
+      "/tmp/install-flannel.sh"
     ]
   }
 }
@@ -80,6 +92,11 @@ resource "null_resource" "install_flannel" {
 resource "null_resource" "install_metallb" {
   depends_on = [null_resource.install_flannel]
 
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.metallb_script_path)
+  }
+
   connection {
     type    = "ssh"
     user    = "ubuntu"
@@ -89,7 +106,7 @@ resource "null_resource" "install_metallb" {
   }
 
   provisioner "file" {
-    content     = file("${path.root}/../scripts-tofu/install-metallb.sh")
+    content     = file(local.metallb_script_path)
     destination = "/tmp/install-metallb.sh"
   }
 
@@ -97,13 +114,18 @@ resource "null_resource" "install_metallb" {
     inline = [
       "sed -i 's/\\r$//' /tmp/install-metallb.sh",
       "chmod +x /tmp/install-metallb.sh",
-      "sudo /tmp/install-metallb.sh"
+      "/tmp/install-metallb.sh"
     ]
   }
 }
 
 resource "null_resource" "install_ingress" {
   depends_on = [null_resource.install_metallb]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.ingress_script_path)
+  }
 
   connection {
     type    = "ssh"
@@ -114,7 +136,7 @@ resource "null_resource" "install_ingress" {
   }
 
   provisioner "file" {
-    content     = file("${path.root}/../scripts-tofu/install-ingress.sh")
+    content     = file(local.ingress_script_path)
     destination = "/tmp/install-ingress.sh"
   }
 
@@ -122,13 +144,18 @@ resource "null_resource" "install_ingress" {
     inline = [
       "sed -i 's/\\r$//' /tmp/install-ingress.sh",
       "chmod +x /tmp/install-ingress.sh",
-      "sudo /tmp/install-ingress.sh"
+      "/tmp/install-ingress.sh"
     ]
   }
 }
 
 resource "null_resource" "install_argocd" {
   depends_on = [null_resource.install_ingress]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.argocd_script_path)
+  }
 
   connection {
     type    = "ssh"
@@ -139,7 +166,7 @@ resource "null_resource" "install_argocd" {
   }
 
   provisioner "file" {
-    content     = file("${path.root}/../scripts-tofu/install-argocd.sh")
+    content     = file(local.argocd_script_path)
     destination = "/tmp/install-argocd.sh"
   }
 
@@ -147,7 +174,7 @@ resource "null_resource" "install_argocd" {
     inline = [
       "sed -i 's/\\r$//' /tmp/install-argocd.sh",
       "chmod +x /tmp/install-argocd.sh",
-      "sudo /tmp/install-argocd.sh"
+      "/tmp/install-argocd.sh"
     ]
   }
 }
