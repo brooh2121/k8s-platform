@@ -1,11 +1,4 @@
 #!/bin/bash
-# ============================================
-# Установка MetalLB и настройка IP-пула
-# ============================================
-# Выполняется на мастер-ноде.
-# Автоматически определяет подсеть и создаёт IP-пул.
-# ============================================
-
 set -e
 
 echo "[MetalLB] Installing MetalLB..."
@@ -26,13 +19,15 @@ for i in {1..20}; do
     sleep 5
 done
 
-# 3. Определяем подсеть мастер-ноды
+# 3. Определяем подсеть
 MASTER_IP=$(hostname -I | awk '{print $1}')
 SUBNET=$(echo $MASTER_IP | cut -d. -f1-3)
 echo "[MetalLB] Detected subnet: $SUBNET.0/24"
 
-# 4. Создаём IP-пул и L2Advertisement
-cat <<EOF | kubectl apply -f -
+# 4. Создаём IP-пул с повторными попытками (пока вебхук не проснётся)
+echo "[MetalLB] Applying IPAddressPool and L2Advertisement (retry until webhook is ready)..."
+
+POOL_MANIFEST=$(cat <<EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -51,6 +46,16 @@ spec:
   ipAddressPools:
   - first-pool
 EOF
+)
+
+for i in {1..30}; do
+    if echo "$POOL_MANIFEST" | kubectl apply -f - 2>/dev/null; then
+        echo "[MetalLB] IPAddressPool and L2Advertisement applied successfully."
+        break
+    fi
+    echo "  Waiting for MetalLB webhook to be ready (attempt $i)..."
+    sleep 5
+done
 
 echo "[MetalLB] MetalLB installed and configured."
 kubectl get pods -n metallb-system
