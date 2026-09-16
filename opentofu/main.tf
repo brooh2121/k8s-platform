@@ -77,6 +77,81 @@ resource "null_resource" "install_flannel" {
   }
 }
 
+resource "null_resource" "install_metallb" {
+  depends_on = [null_resource.install_flannel]
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file("${path.root}/../scripts-tofu/install-metallb.sh")
+    destination = "/tmp/install-metallb.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-metallb.sh",
+      "chmod +x /tmp/install-metallb.sh",
+      "sudo /tmp/install-metallb.sh"
+    ]
+  }
+}
+
+resource "null_resource" "install_ingress" {
+  depends_on = [null_resource.install_metallb]
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file("${path.root}/../scripts-tofu/install-ingress.sh")
+    destination = "/tmp/install-ingress.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-ingress.sh",
+      "chmod +x /tmp/install-ingress.sh",
+      "sudo /tmp/install-ingress.sh"
+    ]
+  }
+}
+
+resource "null_resource" "install_argocd" {
+  depends_on = [null_resource.install_ingress]
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "10m"
+  }
+
+  provisioner "file" {
+    content     = file("${path.root}/../scripts-tofu/install-argocd.sh")
+    destination = "/tmp/install-argocd.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-argocd.sh",
+      "chmod +x /tmp/install-argocd.sh",
+      "sudo /tmp/install-argocd.sh"
+    ]
+  }
+}
+
 # Установка Kubernetes на мастер
 module "k8s_master" {
   source              = "./modules/k8s-node"
