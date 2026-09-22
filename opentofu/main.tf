@@ -22,6 +22,7 @@ locals {
   metallb_script_path  = "${local.scripts_dir}/install-metallb.sh"
   ingress_script_path  = "${local.scripts_dir}/install-ingress.sh"
   argocd_script_path   = "${local.scripts_dir}/install-argocd.sh"
+  gitops_script_path   = "${local.scripts_dir}/setup-gitops.sh"
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
 }
 
@@ -175,6 +176,36 @@ resource "null_resource" "install_argocd" {
       "sed -i 's/\\r$//' /tmp/install-argocd.sh",
       "chmod +x /tmp/install-argocd.sh",
       "/tmp/install-argocd.sh"
+    ]
+  }
+}
+
+resource "null_resource" "setup_gitops" {
+  depends_on = [null_resource.install_argocd]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.gitops_script_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file(local.gitops_script_path)
+    destination = "/tmp/setup-gitops.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/setup-gitops.sh",
+      "chmod +x /tmp/setup-gitops.sh",
+      "sudo /tmp/setup-gitops.sh"
     ]
   }
 }
