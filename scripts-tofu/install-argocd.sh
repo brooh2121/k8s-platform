@@ -25,17 +25,11 @@ grep -n "image:.*redis" /tmp/argocd-install.yaml || true
 echo "[ArgoCD] Applying manifest (server-side)..."
 kubectl apply --server-side --force-conflicts -n "$NAMESPACE" -f /tmp/argocd-install.yaml
 
-echo "[ArgoCD] Waiting for pods to be Running..."
-for i in {1..30}; do
-    RUNNING=$(kubectl get pods -n "$NAMESPACE" --no-headers 2>/dev/null | grep -c "Running" || echo 0)
-    TOTAL=$(kubectl get pods -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l || echo 0)
-    if [ "$RUNNING" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
-        echo "[ArgoCD] All pods are running."
-        break
-    fi
-    echo "  Waiting for ArgoCD pods (attempt $i)..."
-    sleep 5
-done
+echo "[ArgoCD] Waiting for core Deployments to become Available..."
+kubectl wait -n "$NAMESPACE" --for=condition=available deployment/argocd-repo-server --timeout=180s
+kubectl wait -n "$NAMESPACE" --for=condition=available deployment/argocd-application-controller --timeout=180s || \
+  kubectl wait -n "$NAMESPACE" --for=condition=available statefulset/argocd-application-controller --timeout=180s || true
+kubectl wait -n "$NAMESPACE" --for=condition=available deployment/argocd-server --timeout=180s
 
 echo "[ArgoCD] Patching argocd-server service to LoadBalancer..."
 kubectl patch svc argocd-server -n "$NAMESPACE" -p '{"spec": {"type": "LoadBalancer"}}'

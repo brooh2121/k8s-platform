@@ -193,7 +193,7 @@ resource "null_resource" "setup_gitops" {
     user    = "ubuntu"
     host    = module.master_vm.ip
     agent   = true
-    timeout = "5m"
+    timeout = "10m"
   }
 
   provisioner "file" {
@@ -205,7 +205,7 @@ resource "null_resource" "setup_gitops" {
     inline = [
       "sed -i 's/\\r$//' /tmp/setup-gitops.sh",
       "chmod +x /tmp/setup-gitops.sh",
-      "sudo /tmp/setup-gitops.sh"
+      "/tmp/setup-gitops.sh"
     ]
   }
 }

@@ -17,24 +17,42 @@ echo "[GitOps] Setting up GitOps cycle..."
 # 1. Устанавливаем ArgoCD CLI (если не установлен)
 if ! command -v argocd &> /dev/null; then
     echo "[GitOps] Installing ArgoCD CLI..."
-    curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-    chmod +x /usr/local/bin/argocd
+    curl -sSL -o /tmp/argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+    sudo install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd
+    rm -f /tmp/argocd-linux-amd64
 fi
 
-# 2. Получаем пароль администратора
+# 2. Ждём, пока repo-server начнет принимать gRPC :8081
+echo "[GitOps] Waiting for argocd-repo-server..."
+kubectl wait -n "$NAMESPACE" --for=condition=available deployment/argocd-repo-server --timeout=180s
+
+# 3. Получаем пароль администратора
 echo "[GitOps] Getting admin password..."
 ARGOCD_PASSWORD=$(kubectl -n $NAMESPACE get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
-# 3. Определяем адрес ArgoCD-сервера (LoadBalancer IP)
-ARGOCD_IP=$(kubectl get svc argocd-server -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# 4. Определяем адрес ArgoCD-сервера (LoadBalancer IP)
+echo "[GitOps] Waiting for LoadBalancer IP..."
+ARGOCD_IP=""
+for i in {1..20}; do
+    ARGOCD_IP=$(kubectl get svc argocd-server -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+    if [ -n "$ARGOCD_IP" ]; then
+        break
+    fi
+    echo "  Waiting for argocd-server IP (attempt $i)..."
+    sleep 3
+done
+if [ -z "$ARGOCD_IP" ]; then
+    echo "[ERROR] argocd-server has no LoadBalancer IP."
+    exit 1
+fi
 ARGOCD_SERVER="${ARGOCD_IP}:443"
 echo "[GitOps] Using ArgoCD server: $ARGOCD_SERVER"
 
-# 4. Логинимся в ArgoCD
+# 5. Логинимся в ArgoCD
 echo "[GitOps] Logging in to ArgoCD..."
 argocd login "$ARGOCD_SERVER" --username admin --password "$ARGOCD_PASSWORD" --insecure --grpc-web
 
-# 5. Добавляем репозиторий
+# 6. Добавляем репозиторий
 echo "[GitOps] Adding Git repository..."
 argocd repo add "$REPO_URL" --insecure || true
 
