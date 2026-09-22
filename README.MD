@@ -58,4 +58,5 @@
 Документация IaC:
 - `docs/terraform/01-opentofu.md` - OpenTofu: VM, Kubernetes и Flannel;
 - `docs/terraform/02-terraform-experiment.md` - ранний Terraform-черновик для VM;
-- `docs/terraform/03-flannel.md` - установка Flannel через OpenTofu.
+- `docs/terraform/03-flannel.md` - установка Flannel через OpenTofu;
+- `docs/terraform/04-argocd.md` - установка ArgoCD через OpenTofu.

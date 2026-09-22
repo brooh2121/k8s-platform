@@ -4,20 +4,21 @@
 
 Скрипты на ноде:
 - `scripts-tofu/install-k8s-node.sh` - kubeadm master/worker;
-- `scripts-tofu/install-flannel.sh` - CNI Flannel на master.
+- `scripts-tofu/install-flannel.sh` - CNI Flannel на master;
+- `scripts-tofu/install-metallb.sh` - MetalLB и IP-пул;
+- `scripts-tofu/install-ingress.sh` - NGINX Ingress Controller;
+- `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`.
 
 Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.
 
 ## Назначение
 
-Это второй способ поднять базовый кластер: не через пошаговые `scripts/00` и `scripts/01`, а через OpenTofu. Стек создает три VM в `Multipass`, ставит Kubernetes на master и worker-ноды по SSH и накатывает `Flannel`.
-
-Bash-скрипты в `scripts/` остаются путем для `MetalLB`, `ArgoCD` и следующих платформенных шагов.
+Это второй способ поднять базовый кластер: не через пошаговые `scripts/00` и `scripts/01`, а через OpenTofu. Стек создает три VM в `Multipass`, ставит Kubernetes, `Flannel`, `MetalLB`, Ingress и `ArgoCD`.
 
 ## Состав
 
 Корневой модуль `opentofu/`:
-- `main.tf` - провайдеры, VM, установка Kubernetes, копирование join-команды, установка Flannel;
+- `main.tf` - провайдеры, VM, Kubernetes, Flannel, MetalLB, Ingress, ArgoCD;
 - `outputs.tf` - IP master и worker-нод;
 - `variables.tf` - пока пустой, параметры заданы в `main.tf`.
 
@@ -45,9 +46,12 @@ tofu apply
 2. модуль `k8s_master` ставит Kubernetes на master;
 3. `null_resource.master_ready` копирует `/tmp/join-command` с master в `opentofu/join-command.txt`;
 4. `null_resource.install_flannel` копирует и запускает `scripts-tofu/install-flannel.sh` на master;
-5. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
+5. `null_resource.install_metallb` ставит MetalLB;
+6. `null_resource.install_ingress` ставит NGINX Ingress Controller;
+7. `null_resource.install_argocd` ставит ArgoCD;
+8. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
 
-Flannel зависит только от master. Подробности: `docs/terraform/03-flannel.md`.
+Flannel зависит только от master. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`.
 
 ## Скрипт install-k8s-node.sh
 
@@ -106,8 +110,8 @@ tofu apply
 После успешного apply:
 - три VM в `Multipass`;
 - control plane инициализирован, worker-ноды присоединены;
-- установлен CNI `Flannel` v0.25.6;
-- `multipass exec k8s-master -- kubectl get nodes` показывает все ноды, после старта Flannel они должны перейти в `Ready`;
+- установлены `Flannel`, `MetalLB`, Ingress и `ArgoCD`;
+- `multipass exec k8s-master -- kubectl get ns argocd` должен показать namespace;
 - в `opentofu/outputs` доступны IP-адреса;
 - файл `opentofu/join-command.txt` содержит команду join (если master отработал).
 
@@ -116,9 +120,8 @@ tofu apply
 ```
 multipass exec k8s-master -- kubectl get nodes
 multipass exec k8s-master -- kubectl get pods -n kube-flannel
+multipass exec k8s-master -- kubectl get ns argocd
 ```
-
-`MetalLB` и платформенные компоненты пока ставятся скриптами `scripts/03` и далее.
 
 ## Важные замечания
 
