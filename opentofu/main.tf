@@ -24,6 +24,7 @@ locals {
   argocd_script_path   = "${local.scripts_dir}/install-argocd.sh"
   gitops_script_path   = "${local.scripts_dir}/setup-gitops.sh"
   rbac_script_path     = "${local.scripts_dir}/install-rbac.sh"
+  rbac_test_script_path = "${local.scripts_dir}/test-rbac.sh"
   rbac_dir             = abspath("${path.root}/../manifests/rbac")
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
 }
@@ -264,6 +265,37 @@ resource "null_resource" "install_rbac" {
       "sed -i 's/\\r$//' /tmp/install-rbac.sh /tmp/rbac/*.yaml",
       "chmod +x /tmp/install-rbac.sh",
       "/tmp/install-rbac.sh"
+    ]
+  }
+}
+
+resource "null_resource" "test_rbac" {
+  depends_on = [null_resource.install_rbac]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.rbac_test_script_path)
+    rbac       = null_resource.install_rbac.id
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file(local.rbac_test_script_path)
+    destination = "/tmp/test-rbac.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/test-rbac.sh",
+      "chmod +x /tmp/test-rbac.sh",
+      "/tmp/test-rbac.sh"
     ]
   }
 }

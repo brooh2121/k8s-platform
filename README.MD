@@ -61,4 +61,5 @@
 - `docs/terraform/03-flannel.md` - установка Flannel через OpenTofu;
 - `docs/terraform/04-argocd.md` - установка ArgoCD через OpenTofu;
 - `docs/terraform/05-gitops.md` - GitOps: репозиторий и Application;
-- `docs/terraform/06-rbac.md` - RBAC через OpenTofu.
+- `docs/terraform/06-rbac.md` - RBAC через OpenTofu;
+- `docs/terraform/07-test-rbac.md` - проверка RBAC через `kubectl auth can-i`.

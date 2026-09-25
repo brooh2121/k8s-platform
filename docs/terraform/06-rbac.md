@@ -29,11 +29,6 @@ Upload failed: scp: /tmp/rbac/: Is a directory
 2. каждый YAML читается tofu на хосте (`abspath` к Windows-checkout в WSL) и пишется в `/tmp/rbac/<name>.yaml`;
 3. скрипт делает `kubectl apply -f /tmp/rbac/`.
 
-## Проверка
+После установки отдельный шаг `null_resource.test_rbac` гоняет `kubectl auth can-i`. См. `docs/terraform/07-test-rbac.md`.
 
-```
-multipass exec k8s-master -- ls /tmp/rbac
-multipass exec k8s-master -- kubectl get sa,role,rolebinding -n dev
-multipass exec k8s-master -- kubectl get sa devops
-multipass exec k8s-master -- kubectl get clusterrole devops-role
-```
+Kubeconfig из SA-токенов не генерируется: для проверки ролей достаточно impersonation.
