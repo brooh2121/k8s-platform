@@ -23,6 +23,8 @@ locals {
   ingress_script_path  = "${local.scripts_dir}/install-ingress.sh"
   argocd_script_path   = "${local.scripts_dir}/install-argocd.sh"
   gitops_script_path   = "${local.scripts_dir}/setup-gitops.sh"
+  rbac_script_path     = "${local.scripts_dir}/install-rbac.sh"
+  rbac_dir             = abspath("${path.root}/../manifests/rbac")
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
 }
 
@@ -214,7 +216,13 @@ resource "null_resource" "install_rbac" {
   depends_on = [null_resource.install_argocd]
 
   triggers = {
-    master_ip = module.master_vm.ip
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.rbac_script_path)
+    manifests  = sha256(join("", [
+      filesha256("${local.rbac_dir}/developer.yaml"),
+      filesha256("${local.rbac_dir}/devops.yaml"),
+      filesha256("${local.rbac_dir}/user.yaml")
+    ]))
   }
 
   connection {
@@ -225,22 +233,37 @@ resource "null_resource" "install_rbac" {
     timeout = "5m"
   }
 
-  # Копируем все манифесты RBAC
-  provisioner "file" {
-    source      = "${path.root}/../manifests/rbac/"
-    destination = "/tmp/rbac/"
+  # provisioner "file" не заливает каталог в /tmp/rbac/: scp ждет файл.
+  # Сначала mkdir, потом каждый YAML как content (тот же прием, что для скриптов).
+  provisioner "remote-exec" {
+    inline = ["mkdir -p /tmp/rbac"]
   }
 
   provisioner "file" {
-    content     = file("${path.root}/../scripts-tofu/install-rbac.sh")
+    content     = file("${local.rbac_dir}/developer.yaml")
+    destination = "/tmp/rbac/developer.yaml"
+  }
+
+  provisioner "file" {
+    content     = file("${local.rbac_dir}/devops.yaml")
+    destination = "/tmp/rbac/devops.yaml"
+  }
+
+  provisioner "file" {
+    content     = file("${local.rbac_dir}/user.yaml")
+    destination = "/tmp/rbac/user.yaml"
+  }
+
+  provisioner "file" {
+    content     = file(local.rbac_script_path)
     destination = "/tmp/install-rbac.sh"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "sed -i 's/\\r$//' /tmp/install-rbac.sh",
+      "sed -i 's/\\r$//' /tmp/install-rbac.sh /tmp/rbac/*.yaml",
       "chmod +x /tmp/install-rbac.sh",
-      "sudo /tmp/install-rbac.sh"
+      "/tmp/install-rbac.sh"
     ]
   }
 }
