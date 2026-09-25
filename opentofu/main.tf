@@ -210,6 +210,41 @@ resource "null_resource" "setup_gitops" {
   }
 }
 
+resource "null_resource" "install_rbac" {
+  depends_on = [null_resource.install_argocd]
+
+  triggers = {
+    master_ip = module.master_vm.ip
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  # Копируем все манифесты RBAC
+  provisioner "file" {
+    source      = "${path.root}/../manifests/rbac/"
+    destination = "/tmp/rbac/"
+  }
+
+  provisioner "file" {
+    content     = file("${path.root}/../scripts-tofu/install-rbac.sh")
+    destination = "/tmp/install-rbac.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-rbac.sh",
+      "chmod +x /tmp/install-rbac.sh",
+      "sudo /tmp/install-rbac.sh"
+    ]
+  }
+}
+
 # Установка Kubernetes на мастер
 module "k8s_master" {
   source              = "./modules/k8s-node"
