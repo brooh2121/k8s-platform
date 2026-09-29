@@ -25,9 +25,10 @@ multipass exec k8s-master -- helm version
 Порядок сейчас:
 1. установка Helm при необходимости;
 2. создание namespace `vault`;
-3. `helm upgrade --install` chart HashiCorp, dev-режим, корневой токен `root`;
-4. ожидание Running;
-5. `kubectl apply` Ingress.
+3. скачивание chart `vault-helm` v0.29.1 с GitHub (не `helm.releases.hashicorp.com` - он часто закрыт по гео);
+4. `helm upgrade --install` в dev-режиме, корневой токен `root`;
+5. ожидание Running;
+6. `kubectl apply` Ingress.
 
 ## Доступ
 

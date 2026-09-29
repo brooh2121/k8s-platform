@@ -29,12 +29,19 @@ install_helm
 echo "[Vault] Creating namespace vault..."
 kubectl create namespace vault --dry-run=client -o yaml | kubectl apply -f -
 
-echo "[Vault] Adding HashiCorp Helm repository..."
-helm repo add hashicorp https://helm.releases.hashicorp.com --force-update
-helm repo update
+# helm.releases.hashicorp.com часто недоступен (geo-block).
+# Chart берем с GitHub, тот же vault-helm.
+VAULT_HELM_TAG="v0.29.1"
+VAULT_HELM_DIR="/tmp/vault-helm-${VAULT_HELM_TAG#v}"
+echo "[Vault] Downloading vault-helm ${VAULT_HELM_TAG} from GitHub..."
+curl -fsSL -o /tmp/vault-helm.tgz \
+  "https://github.com/hashicorp/vault-helm/archive/refs/tags/${VAULT_HELM_TAG}.tar.gz"
+rm -rf "$VAULT_HELM_DIR"
+tar -xzf /tmp/vault-helm.tgz -C /tmp
+rm -f /tmp/vault-helm.tgz
 
 echo "[Vault] Installing/upgrading Vault (dev mode, root token=root)..."
-helm upgrade --install vault hashicorp/vault \
+helm upgrade --install vault "$VAULT_HELM_DIR" \
   --namespace vault \
   --set "server.dev.enabled=true" \
   --set "server.dev.devRootToken=root"
