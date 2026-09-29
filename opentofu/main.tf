@@ -27,6 +27,8 @@ locals {
   rbac_test_script_path = "${local.scripts_dir}/test-rbac.sh"
   rbac_dir             = abspath("${path.root}/../manifests/rbac")
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
+  vault_script_path    = "${local.scripts_dir}/install-vault.sh"
+  vault_ingress_path   = abspath("${path.root}/../manifests/vault-ingress.yaml")
 }
 
 module "master_vm" {
@@ -296,6 +298,46 @@ resource "null_resource" "test_rbac" {
       "sed -i 's/\\r$//' /tmp/test-rbac.sh",
       "chmod +x /tmp/test-rbac.sh",
       "/tmp/test-rbac.sh"
+    ]
+  }
+}
+
+resource "null_resource" "install_vault" {
+  depends_on = [null_resource.install_ingress] # Зависит от Ingress-контроллера
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.vault_script_path)
+    ingress_sha = filesha256(local.vault_ingress_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "10m"
+  }
+
+  # Копируем скрипт
+  provisioner "file" {
+    content     = file(local.vault_script_path)
+    destination = "/tmp/install-vault.sh"
+  }
+
+  # Копируем Ingress-манифест
+  provisioner "file" {
+    content     = file(local.vault_ingress_path)
+    destination = "/tmp/vault-ingress.yaml"
+  }
+
+  # Выполняем установку и применяем Ingress
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml",
+      "chmod +x /tmp/install-vault.sh",
+      "/tmp/install-vault.sh",
+      "kubectl apply -f /tmp/vault-ingress.yaml"
     ]
   }
 }
