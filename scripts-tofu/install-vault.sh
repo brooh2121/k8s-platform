@@ -9,21 +9,36 @@ set -e
 
 echo "[Vault] Installing HashiCorp Vault in Dev Mode..."
 
-# 1. Добавляем репозиторий HashiCorp
-helm repo add hashicorp https://helm.releases.hashicorp.com
-helm repo update
+install_helm() {
+    if command -v helm >/dev/null 2>&1; then
+        echo "[Vault] Helm already installed: $(helm version --short)"
+        return
+    fi
 
-# 2. Создаём неймспейс
+    echo "[Vault] Helm not found, installing..."
+    HELM_VERSION="v3.16.4"
+    curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+    tar -xzf /tmp/helm.tgz -C /tmp
+    sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
+    rm -rf /tmp/helm.tgz /tmp/linux-amd64
+    helm version --short
+}
+
+install_helm
+
+echo "[Vault] Creating namespace vault..."
 kubectl create namespace vault --dry-run=client -o yaml | kubectl apply -f -
 
-# 3. Устанавливаем Vault в dev-режиме
-#    Мы задаём корневой токен "root" для удобства тестирования.
-helm install vault hashicorp/vault \
+echo "[Vault] Adding HashiCorp Helm repository..."
+helm repo add hashicorp https://helm.releases.hashicorp.com --force-update
+helm repo update
+
+echo "[Vault] Installing/upgrading Vault (dev mode, root token=root)..."
+helm upgrade --install vault hashicorp/vault \
   --namespace vault \
   --set "server.dev.enabled=true" \
   --set "server.dev.devRootToken=root"
 
-# 4. Ждём, пока под запустится
 echo "[Vault] Waiting for Vault pod to be ready..."
 for i in {1..20}; do
     READY=$(kubectl get pods -n vault --no-headers 2>/dev/null | grep -c "Running" || echo 0)
@@ -36,5 +51,11 @@ for i in {1..20}; do
     sleep 5
 done
 
+if [ -f /tmp/vault-ingress.yaml ]; then
+    echo "[Vault] Applying Ingress..."
+    kubectl apply -f /tmp/vault-ingress.yaml
+fi
+
 echo "[Vault] Vault installed and running."
 kubectl get pods -n vault
+kubectl get ingress -n vault

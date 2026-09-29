@@ -336,8 +336,7 @@ resource "null_resource" "install_vault" {
     inline = [
       "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml",
       "chmod +x /tmp/install-vault.sh",
-      "/tmp/install-vault.sh",
-      "kubectl apply -f /tmp/vault-ingress.yaml"
+      "/tmp/install-vault.sh"
     ]
   }
 }
