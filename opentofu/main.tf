@@ -29,6 +29,9 @@ locals {
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
   vault_script_path    = "${local.scripts_dir}/install-vault.sh"
   vault_ingress_path   = abspath("${path.root}/../manifests/vault-ingress.yaml")
+  configure_vault_script_path = "${local.scripts_dir}/configure-vault.sh"
+  vault_policy_path    = abspath("${path.root}/../manifests/vault/policy.hcl")
+  vault_test_pod_path  = abspath("${path.root}/../manifests/vault/test-pod.yaml")
 }
 
 module "master_vm" {
@@ -337,6 +340,76 @@ resource "null_resource" "install_vault" {
       "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml",
       "chmod +x /tmp/install-vault.sh",
       "/tmp/install-vault.sh"
+    ]
+  }
+}
+
+resource "null_resource" "configure_vault" {
+  depends_on = [null_resource.install_vault]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.configure_vault_script_path)
+    policy_sha = filesha256(local.vault_policy_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  # Копируем скрипт
+  provisioner "file" {
+    content     = file(local.configure_vault_script_path)
+    destination = "/tmp/configure-vault.sh"
+  }
+
+  # Копируем политику
+  provisioner "file" {
+    content     = file(local.vault_policy_path)
+    destination = "/tmp/vault-policy.hcl"
+  }
+
+  # Выполняем настройку
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/configure-vault.sh /tmp/vault-policy.hcl",
+      "chmod +x /tmp/configure-vault.sh",
+      "/tmp/configure-vault.sh"
+    ]
+  }
+}
+
+resource "null_resource" "test_vault_integration" {
+  depends_on = [null_resource.configure_vault]
+
+  triggers = {
+    master_ip = module.master_vm.ip
+    pod_sha   = filesha256(local.vault_test_pod_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    content     = file(local.vault_test_pod_path)
+    destination = "/tmp/test-pod.yaml"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/test-pod.yaml",
+      "kubectl apply -f /tmp/test-pod.yaml",
+      "sleep 15",
+      "kubectl logs test-vault-pod -n default || true"
     ]
   }
 }

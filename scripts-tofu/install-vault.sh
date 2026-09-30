@@ -44,7 +44,8 @@ echo "[Vault] Installing/upgrading Vault (dev mode, root token=root)..."
 helm upgrade --install vault "$VAULT_HELM_DIR" \
   --namespace vault \
   --set "server.dev.enabled=true" \
-  --set "server.dev.devRootToken=root"
+  --set "server.dev.devRootToken=root" \
+  --set "injector.enabled=true"
 
 echo "[Vault] Waiting for Vault pod to be ready..."
 for i in {1..20}; do
@@ -66,3 +67,5 @@ fi
 echo "[Vault] Vault installed and running."
 kubectl get pods -n vault
 kubectl get ingress -n vault
+
+echo "[Vault] Configuring Kubernetes auth method..."
