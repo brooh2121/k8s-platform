@@ -32,6 +32,12 @@ kubectl exec -n $NAMESPACE $VAULT_POD -- vault write auth/kubernetes/role/test-r
   policies=test-policy \
   ttl=1h
 
+# 6. Учебный секрет для injector (kv-v2 в dev уже на пути secret/)
+echo "[Vault] Writing demo KV secret secret/test..."
+kubectl exec -n $NAMESPACE $VAULT_POD -- vault kv put secret/test \
+  username=demo \
+  password=lab
+
 echo "[Vault] Configuration complete."
 kubectl exec -n $NAMESPACE $VAULT_POD -- vault auth list
 kubectl exec -n $NAMESPACE $VAULT_POD -- vault policy list

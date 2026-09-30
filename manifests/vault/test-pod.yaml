@@ -1,3 +1,5 @@
+# Учебный под для Vault Agent Injector.
+# SA test-sa должен совпадать с ролью test-role в Vault.
 apiVersion: v1
 kind: ServiceAccount
 metadata:

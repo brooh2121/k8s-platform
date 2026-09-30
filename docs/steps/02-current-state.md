@@ -84,21 +84,21 @@
 ### OpenTofu и Terraform
 
 Параллельно bash-скриптам появился IaC-контур:
-- `opentofu/` создает VM, ставит Kubernetes и CNI `Flannel`;
+- `opentofu/` создает VM, ставит Kubernetes, CNI, MetalLB, Ingress, ArgoCD, RBAC и Vault (dev + injector);
 - `terraform/` только создает те же три VM без установки Kubernetes.
 
-Подробности: `docs/terraform/01-opentofu.md`, `docs/terraform/03-flannel.md` и `docs/terraform/02-terraform-experiment.md`.
+Подробности: `docs/terraform/01-opentofu.md`, Vault: `docs/terraform/08-vault.md` и `docs/terraform/09-vault-injector.md`.
 
 ## Что важно помнить
 
 - проект пока ориентирован на локальный стенд и учебный сценарий;
 - многие параметры в скриптах пока заданы напрямую;
 - запуск выполняется по шагам, а не через единый orchestration-пайплайн;
-- параллельно развивается IaC в `opentofu/`, он пока не заменяет скрипты шагов 3 и далее;
+- параллельно развивается IaC в `opentofu/`; bash-шаги `scripts/` остаются справочным путём;
 - часть конфигурации генерируется динамически во время выполнения скриптов.
 
 ## Текущая точка остановки
 
-На данный момент `ArgoCD` установлен, UI открыт через Ingress, подключен Git-репозиторий и создано Application `nginx`. Автосинхронизация выключена, GitLab CI/CD еще не подключен.
+На данный момент `ArgoCD` установлен, UI открыт через Ingress, подключен Git-репозиторий и создано Application `nginx`. На IaC-пути есть учебный RBAC и Vault в dev с Agent Injector. Автосинхронизация выключена, GitLab CI/CD еще не подключен.
 
-Следующий блок работы - связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.
+Следующий блок работы - связка с GitLab CI/CD.

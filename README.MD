@@ -15,12 +15,13 @@
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
 - преднастройка GitOps: репозиторий и Application `nginx` в `ArgoCD`;
-- черновик IaC: `terraform/` для VM и `opentofu/` для VM, Kubernetes и Flannel.
+- учебный `RBAC` и проверки `kubectl auth can-i`;
+- HashiCorp Vault (dev) через Helm, Vault Agent Injector и Kubernetes auth;
+- черновик IaC: `terraform/` для VM и `opentofu/` для VM, Kubernetes и платформенных шагов.
 
 Следующие этапы развития:
 - связка с GitLab CI/CD;
-- настройка `RBAC`;
-- установка `HashiCorp Vault`;
+- при необходимости более реалистичный Vault (Raft, PVC, TLS);
 - автоматизация всего процесса в одном пайплайне.
 
 ## Структура репозитория
@@ -63,4 +64,5 @@
 - `docs/terraform/05-gitops.md` - GitOps: репозиторий и Application;
 - `docs/terraform/06-rbac.md` - RBAC через OpenTofu;
 - `docs/terraform/07-test-rbac.md` - проверка RBAC через `kubectl auth can-i`;
-- `docs/terraform/08-vault.md` - HashiCorp Vault через Helm.
+- `docs/terraform/08-vault.md` - HashiCorp Vault (Helm, dev, Ingress, injector);
+- `docs/terraform/09-vault-injector.md` - Kubernetes auth, политика и учебный Pod.

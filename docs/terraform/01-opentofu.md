@@ -7,7 +7,9 @@
 - `scripts-tofu/install-flannel.sh` - CNI Flannel на master;
 - `scripts-tofu/install-metallb.sh` - MetalLB и IP-пул;
 - `scripts-tofu/install-ingress.sh` - NGINX Ingress Controller;
-- `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`.
+- `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`;
+- `scripts-tofu/install-vault.sh` - Vault Helm (dev) и Agent Injector;
+- `scripts-tofu/configure-vault.sh` - Kubernetes auth, policy, роль, учебный KV.
 
 Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.
 
@@ -49,9 +51,13 @@ tofu apply
 5. `null_resource.install_metallb` ставит MetalLB;
 6. `null_resource.install_ingress` ставит NGINX Ingress Controller;
 7. `null_resource.install_argocd` ставит ArgoCD;
-8. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
+8. GitOps, RBAC и проверки `can-i` (см. `04`..`07`);
+9. `null_resource.install_vault` ставит Vault и injector;
+10. `null_resource.configure_vault` включает Kubernetes auth;
+11. `null_resource.test_vault_integration` применяет учебный Pod;
+12. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
 
-Flannel зависит только от master. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`.
+Flannel зависит только от master. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`. Vault: `docs/terraform/08-vault.md`, injector: `docs/terraform/09-vault-injector.md`.
 
 ## Скрипт install-k8s-node.sh
 
@@ -110,8 +116,8 @@ tofu apply
 После успешного apply:
 - три VM в `Multipass`;
 - control plane инициализирован, worker-ноды присоединены;
-- установлены `Flannel`, `MetalLB`, Ingress и `ArgoCD`;
-- `multipass exec k8s-master -- kubectl get ns argocd` должен показать namespace;
+- установлены `Flannel`, `MetalLB`, Ingress, `ArgoCD`, учебный RBAC и Vault (dev);
+- `multipass exec k8s-master -- kubectl get ns argocd` и `-n vault` должны показать namespace;
 - в `opentofu/outputs` доступны IP-адреса;
 - файл `opentofu/join-command.txt` содержит команду join (если master отработал).
 

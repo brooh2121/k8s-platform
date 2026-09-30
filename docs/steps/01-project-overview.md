@@ -24,9 +24,10 @@
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
 - преднастройка GitOps: репозиторий `argocd-apps` и Application `nginx`;
-- черновик IaC в `terraform/` и рабочий стек OpenTofu в `opentofu/` (VM, Kubernetes, Flannel).
+- учебный RBAC и HashiCorp Vault (dev, Agent Injector) на пути OpenTofu;
+- черновик IaC в `terraform/` и рабочий стек OpenTofu в `opentofu/`.
 
-Ближайшая работа: связка с GitLab CI/CD. После этого - `RBAC` и `HashiCorp Vault`.
+Ближайшая работа: связка с GitLab CI/CD.
 
 ## Базовая архитектура стенда
 

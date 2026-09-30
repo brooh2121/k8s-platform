@@ -67,5 +67,3 @@ fi
 echo "[Vault] Vault installed and running."
 kubectl get pods -n vault
 kubectl get ingress -n vault
-
-echo "[Vault] Configuring Kubernetes auth method..."
