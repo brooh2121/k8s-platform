@@ -30,6 +30,7 @@ locals {
   vault_script_path    = "${local.scripts_dir}/install-vault.sh"
   vault_ingress_path   = abspath("${path.root}/../manifests/vault-ingress.yaml")
   vault_values_path    = abspath("${path.root}/../manifests/vault/helm-values.yaml")
+  vault_unsealer_path  = abspath("${path.root}/../manifests/vault/unsealer.yaml")
   configure_vault_script_path = "${local.scripts_dir}/configure-vault.sh"
   vault_policy_path    = abspath("${path.root}/../manifests/vault/policy.hcl")
   vault_test_pod_path  = abspath("${path.root}/../manifests/vault/test-pod.yaml")
@@ -313,7 +314,8 @@ resource "null_resource" "install_vault" {
     master_ip   = module.master_vm.ip
     script_sha  = filesha256(local.vault_script_path)
     ingress_sha = filesha256(local.vault_ingress_path)
-    values_sha  = filesha256(local.vault_values_path)
+    values_sha    = filesha256(local.vault_values_path)
+    unsealer_sha  = filesha256(local.vault_unsealer_path)
   }
 
   connection {
@@ -341,10 +343,15 @@ resource "null_resource" "install_vault" {
     destination = "/tmp/vault-values.yaml"
   }
 
+  provisioner "file" {
+    content     = file(local.vault_unsealer_path)
+    destination = "/tmp/vault-unsealer.yaml"
+  }
+
   # Выполняем установку и применяем Ingress
   provisioner "remote-exec" {
     inline = [
-      "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml /tmp/vault-values.yaml",
+      "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml /tmp/vault-values.yaml /tmp/vault-unsealer.yaml",
       "chmod +x /tmp/install-vault.sh",
       "/tmp/install-vault.sh"
     ]

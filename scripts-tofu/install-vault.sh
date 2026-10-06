@@ -183,6 +183,12 @@ helm upgrade --install vault "$VAULT_HELM_DIR" \
 wait_vault_api
 init_and_unseal
 
+if [ -f /tmp/vault-unsealer.yaml ]; then
+    echo "[Vault] Applying lab unsealer (Shamir key from secret vault-init)..."
+    kubectl apply -f /tmp/vault-unsealer.yaml
+    kubectl rollout status deployment/vault-unsealer -n vault --timeout=120s
+fi
+
 if [ -f /tmp/vault-ingress.yaml ]; then
     echo "[Vault] Applying Ingress..."
     kubectl apply -f /tmp/vault-ingress.yaml

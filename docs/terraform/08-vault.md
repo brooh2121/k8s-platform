@@ -4,6 +4,7 @@
 
 Манифесты:
 - `manifests/vault/helm-values.yaml` - standalone + PVC `local-path`;
+- `manifests/vault/unsealer.yaml` - учебный цикл unseal после рестарта;
 - `manifests/vault-ingress.yaml`.
 
 Ресурс: `null_resource.install_vault` в `opentofu/main.tf`
@@ -16,7 +17,7 @@
 
 Поставить Vault в namespace `vault` в режиме **standalone** (file storage на PVC), не `-dev`.
 
-Данные на диске ноды через StorageClass `local-path`. После рестарта пода Vault **sealed**: скрипт делает `operator init` (1 ключ) и `unseal`. Корневой токен больше не строка `root`.
+Данные на диске ноды через StorageClass `local-path`. После рестарта пода Vault снова **sealed** - Shamir, не потеря KV. Скрипт делает `operator init` (1 ключ), пишет Secret `vault-init` и ставит Deployment `vault-unsealer`, который повторяет `operator unseal`. Это автоматизация Shamir, не auto-unseal через KMS.
 
 Chart включает **Vault Agent Injector**. Ingress `vault.local` - опция, для лаборатории достаточно CLI.
 
@@ -40,7 +41,24 @@ Chart включает **Vault Agent Injector**. Ingress `vault.local` - опц�
 6. `helm upgrade --install -f /tmp/vault-values.yaml`;
 7. ждать API (`vault status -format=json`), не Ready;
 8. `vault operator init` + Secret `vault-init` + unseal;
-9. Ingress.
+9. Deployment `vault-unsealer`;
+10. Ingress.
+
+## 503 после delete pod vault-0
+
+Тест persistence: `kv put` -> удалить под -> `kv get`. PVC живой, секрет на диске. Пока новый процесс sealed, API отвечает **503**. Это не "хранилище стёрлось".
+
+Настоящий auto-unseal HashiCorp - ключ в AWS KMS / GCP KMS / Azure Key Vault / Transit. На Multipass этого нет, и тащить облако ради стенда незачем.
+
+Ключ уже лежит в `vault-init` (etcd). Повторять `operator unseal` из него - честный учебный костыль: замок и ключ в одном кластере. В проде так не делают.
+
+Проверка после apply:
+
+```
+multipass exec k8s-master -- kubectl delete pod vault-0 -n vault
+# подождать Ready 1/1 (unsealer, обычно < 15s)
+multipass exec k8s-master -- kubectl exec -n vault vault-0 -- env VAULT_TOKEN=<root> vault kv get secret/prod-test
+```
 
 ## Отладка: Running, но Ready 0/1
 

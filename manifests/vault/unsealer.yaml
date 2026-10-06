@@ -1,0 +1,52 @@
+# Учебный unsealer: после рестарта vault-0 снова sealed (Shamir).
+# Это не auto-unseal через KMS: ключ уже лежит в Secret vault-init.
+# Для лаборатории ключ в etcd принят; в проде так не делают.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-unsealer
+  namespace: vault
+  labels:
+    app: vault-unsealer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-unsealer
+  template:
+    metadata:
+      labels:
+        app: vault-unsealer
+    spec:
+      containers:
+      - name: unsealer
+        image: hashicorp/vault:1.18.1
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          export VAULT_ADDR=http://vault.vault.svc:8200
+          echo "[unsealer] watching $VAULT_ADDR"
+          while true; do
+            JSON=$(vault status -format=json 2>/dev/null || true)
+            case "$JSON" in
+              *'"sealed": true'*|*'"sealed":true'*)
+                echo "[unsealer] sealed, unsealing..."
+                vault operator unseal "$UNSEAL_KEY" || true
+                ;;
+            esac
+            sleep 5
+          done
+        env:
+        - name: UNSEAL_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-init
+              key: unseal
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
