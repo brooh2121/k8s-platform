@@ -38,9 +38,35 @@ Chart включает **Vault Agent Injector**. Ingress `vault.local` - опц�
 4. снос -dev STS, если он ещё живой;
 5. chart `vault-helm` v0.29.1 с GitHub;
 6. `helm upgrade --install -f /tmp/vault-values.yaml`;
-7. ждать **Running** (не Ready: sealed под не Ready);
+7. ждать API (`vault status -format=json`), не Ready;
 8. `vault operator init` + Secret `vault-init` + unseal;
 9. Ingress.
+
+## Отладка: Running, но Ready 0/1
+
+Это ожидаемо, пока Vault **sealed** или **не инициализирован**. Readiness probe chart - команда `vault status`. Она завершается с кодом 2 и печатает таблицу `Key / Value`. kubelet пишет `Readiness probe failed` - это не падение контейнера.
+
+Сразу смотрите сам статус, код 2 можно игнорировать:
+
+```
+multipass exec k8s-master -- kubectl exec -n vault vault-0 -- vault status
+```
+
+Как читать:
+
+- `Initialized false`, `Sealed true` - ещё не делали `vault operator init` (в логах пода: `seal configuration missing`). Нужен init, не delete cluster.
+- `Initialized true`, `Sealed true` - данные на PVC есть, без unseal-ключа Ready не станет. Ключ в Secret `vault-init`. Если секрета нет - ключ потерян, для лаборатории снести PVC `data-vault-0` и под, затем снова init.
+- `Sealed false` - API живой, Ready должен стать 1/1 через несколько проб.
+
+Дополнительно:
+
+```
+multipass exec k8s-master -- kubectl get pvc -n vault
+multipass exec k8s-master -- kubectl get secret vault-init -n vault
+multipass exec k8s-master -- kubectl logs vault-0 -n vault --tail=50
+```
+
+`vault status -format=json` тоже даёт exit 2, пока sealed. Скрипт это учитывает: парсит JSON, не считает exit кодом фатальной ошибкой.
 
 ## Проверка
 

@@ -54,52 +54,96 @@ remove_dev_statefulset() {
     fi
 }
 
-wait_vault_running() {
-    echo "[Vault] Waiting for vault-0 to be Running (Ready waits until unseal)..."
+# vault status в sealed / not initialized даёт exit 2 - это норма, не ошибка.
+vault_status_json() {
+    kubectl exec -n vault vault-0 -- vault status -format=json 2>/dev/null || true
+}
+
+vault_status_field() {
+    local field="$1"
+    python3 -c '
+import json, sys
+field = sys.argv[1]
+raw = sys.stdin.read()
+start = raw.find("{")
+if start < 0:
+    sys.exit(1)
+data = json.loads(raw[start:])
+if field not in data:
+    sys.exit(1)
+print("yes" if data[field] else "no")
+' "$field"
+}
+
+wait_vault_api() {
+    echo "[Vault] Waiting for vault-0 API (Running != Ready, sealed is OK)..."
     for i in $(seq 1 36); do
         PHASE=$(kubectl get pod vault-0 -n vault -o jsonpath='{.status.phase}' 2>/dev/null || true)
-        if [ "$PHASE" = "Running" ]; then
-            echo "[Vault] vault-0 is Running."
+        STATUS=$(vault_status_json)
+        if [ "$PHASE" = "Running" ] && printf '%s' "$STATUS" | vault_status_field initialized >/dev/null 2>&1; then
+            echo "[Vault] vault-0 API answers."
             return
         fi
-        echo "  Waiting for vault-0 (attempt $i, phase=${PHASE:-none})..."
+        echo "  Waiting for vault API (attempt $i, phase=${PHASE:-none})..."
         sleep 5
     done
-    echo "[Vault] vault-0 did not become Running."
+    echo "[Vault] vault-0 API did not answer."
     kubectl get pods -n vault -o wide || true
     kubectl describe pod vault-0 -n vault || true
+    kubectl logs vault-0 -n vault --tail=30 || true
     exit 1
+}
+
+reset_vault_storage() {
+    echo "[Vault] Deleting PVC data-vault-0 so lab can init again (unseal keys are gone)..."
+    kubectl delete pod vault-0 -n vault --wait=true --ignore-not-found || true
+    kubectl delete pvc data-vault-0 -n vault --wait=true --ignore-not-found || true
+    wait_vault_api
 }
 
 init_and_unseal() {
     echo "[Vault] Checking init/unseal..."
-    STATUS=$(kubectl exec -n vault vault-0 -- vault status -format=json 2>/dev/null || true)
+    kubectl exec -n vault vault-0 -- vault status || true
 
-    INITIALIZED=$(printf '%s' "$STATUS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(str(d.get('initialized', False)).lower())" 2>/dev/null || echo "false")
-    SEALED=$(printf '%s' "$STATUS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(str(d.get('sealed', True)).lower())" 2>/dev/null || echo "true")
+    STATUS=$(vault_status_json)
+    INITIALIZED=$(printf '%s' "$STATUS" | vault_status_field initialized)
+    SEALED=$(printf '%s' "$STATUS" | vault_status_field sealed)
+    echo "[Vault] parsed initialized=${INITIALIZED} sealed=${SEALED}"
 
-    if [ "$INITIALIZED" != "true" ]; then
+    if [ "$INITIALIZED" = "yes" ] && ! kubectl get secret vault-init -n vault >/dev/null 2>&1; then
+        echo "[Vault] Initialized on PVC, Secret vault-init missing. Keys cannot be recovered."
+        reset_vault_storage
+        STATUS=$(vault_status_json)
+        INITIALIZED=$(printf '%s' "$STATUS" | vault_status_field initialized)
+        SEALED=$(printf '%s' "$STATUS" | vault_status_field sealed)
+    fi
+
+    if [ "$INITIALIZED" != "yes" ]; then
         echo "[Vault] Initializing (1 share / 1 threshold, lab only)..."
         kubectl exec -n vault vault-0 -- vault operator init \
           -key-shares=1 -key-threshold=1 -format=json > /tmp/vault-init.json
-        UNSEAL=$(python3 -c "import json; print(json.load(open('/tmp/vault-init.json'))['unseal_keys_b64'][0])")
-        ROOT=$(python3 -c "import json; print(json.load(open('/tmp/vault-init.json'))['root_token'])")
+        python3 -c '
+import json
+raw = open("/tmp/vault-init.json").read()
+data = json.loads(raw[raw.find("{"):])
+open("/tmp/vault-init.json","w").write(json.dumps(data))
+print(data["unseal_keys_b64"][0])
+print(data["root_token"])
+' > /tmp/vault-init.kv
+        UNSEAL=$(sed -n '1p' /tmp/vault-init.kv)
+        ROOT=$(sed -n '2p' /tmp/vault-init.kv)
         kubectl create secret generic vault-init -n vault \
           --from-literal=unseal="$UNSEAL" \
           --from-literal=root="$ROOT" \
           --dry-run=client -o yaml | kubectl apply -f -
-        chmod 600 /tmp/vault-init.json
-        SEALED="true"
+        chmod 600 /tmp/vault-init.json /tmp/vault-init.kv
+        SEALED="yes"
     else
-        if ! kubectl get secret vault-init -n vault >/dev/null 2>&1; then
-            echo "[Vault] Vault already initialized, but secret vault-init is missing. Delete PVC and reinstall."
-            exit 1
-        fi
         UNSEAL=$(kubectl get secret vault-init -n vault -o jsonpath='{.data.unseal}' | base64 -d)
         ROOT=$(kubectl get secret vault-init -n vault -o jsonpath='{.data.root}' | base64 -d)
     fi
 
-    if [ "$SEALED" = "true" ]; then
+    if [ "$SEALED" = "yes" ]; then
         echo "[Vault] Unsealing..."
         kubectl exec -n vault vault-0 -- vault operator unseal "$UNSEAL" >/dev/null
     fi
@@ -136,7 +180,7 @@ helm upgrade --install vault "$VAULT_HELM_DIR" \
   --namespace vault \
   --values "$VALUES"
 
-wait_vault_running
+wait_vault_api
 init_and_unseal
 
 if [ -f /tmp/vault-ingress.yaml ]; then
