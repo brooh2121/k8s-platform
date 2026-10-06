@@ -52,6 +52,8 @@ Chart включает **Vault Agent Injector**. Ingress `vault.local` - опц�
 
 Ключ уже лежит в `vault-init` (etcd). Повторять `operator unseal` из него - честный учебный костыль: замок и ключ в одном кластере. В проде так не делают.
 
+Unsealer идёт под SA `vault-unseal`, не под `default`. Role разрешает только `get` Secret `vault-init`. Текущий под ключ берёт через `secretKeyRef` (kubelet), в API за секретом не ходит; Role пригодится, если чтение перенесут на kubectl.
+
 Проверка после apply:
 
 ```

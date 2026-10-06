@@ -1,6 +1,41 @@
 # Учебный unsealer: после рестарта vault-0 снова sealed (Shamir).
 # Это не auto-unseal через KMS: ключ уже лежит в Secret vault-init.
-# Для лаборатории ключ в etcd принят; в проде так не делают.
+#
+# SA vault-unseal вместо default.
+# secretKeyRef подставляет ключ через kubelet, без запроса в API.
+# Role get secrets/vault-init нужен, только если клиент сам читает Secret
+# (kubectl/API). Оставляем как явное ограничение на этот SA.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-unseal
+  namespace: vault
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-unseal-role
+  namespace: vault
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["vault-init"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-unseal-binding
+  namespace: vault
+subjects:
+- kind: ServiceAccount
+  name: vault-unseal
+  namespace: vault
+roleRef:
+  kind: Role
+  name: vault-unseal-role
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +53,7 @@ spec:
       labels:
         app: vault-unsealer
     spec:
+      serviceAccountName: vault-unseal
       containers:
       - name: unsealer
         image: hashicorp/vault:1.18.1
