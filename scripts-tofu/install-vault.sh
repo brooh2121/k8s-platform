@@ -40,11 +40,14 @@ rm -rf "$VAULT_HELM_DIR"
 tar -xzf /tmp/vault-helm.tgz -C /tmp
 rm -f /tmp/vault-helm.tgz
 
-echo "[Vault] Installing/upgrading Vault (dev mode, root token=root)..."
+# Вместо dev-режима используем standalone с persistent storage
 helm upgrade --install vault "$VAULT_HELM_DIR" \
   --namespace vault \
-  --set "server.dev.enabled=true" \
-  --set "server.dev.devRootToken=root" \
+  --set "server.dev.enabled=false" \
+  --set "server.standalone.enabled=true" \
+  --set "server.standalone.config=storage \"file\" { path = \"/vault/data\" }" \
+  --set "server.dataStorage.enabled=true" \
+  --set "server.dataStorage.size=1Gi" \
   --set "injector.enabled=true"
 
 echo "[Vault] Waiting for Vault pod to be ready..."
