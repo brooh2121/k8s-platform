@@ -64,15 +64,15 @@
 
 ### 6. HashiCorp Vault
 
-Этап начат на IaC-пути (`opentofu/`). Сейчас это **dev-режим** плюс Vault Agent Injector:
+Этап начат на IaC-пути (`opentofu/`). Сейчас это **standalone** (file + PVC `local-path`) плюс Vault Agent Injector:
 
 - Helm-chart, namespace `vault`, Ingress `vault.local`;
-- Kubernetes auth, политика, роль под SA `test-sa`;
+- init/unseal, Kubernetes auth, политика, роль под SA `test-sa`;
 - учебный Pod с аннотациями injector.
 
 Документация: `docs/terraform/08-vault.md`, `docs/terraform/09-vault-injector.md`.
 
-Ещё не цель этого этапа: Raft, PVC, TLS, unseal как в production.
+Ещё не цель этого этапа: Raft HA, TLS, auto-unseal как в production.
 
 Ожидаемый текущий результат: под в кластере читает секрет из Vault без копирования пароля в обычный `Secret`.
 

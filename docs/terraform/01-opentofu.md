@@ -8,7 +8,7 @@
 - `scripts-tofu/install-metallb.sh` - MetalLB и IP-пул;
 - `scripts-tofu/install-ingress.sh` - NGINX Ingress Controller;
 - `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`;
-- `scripts-tofu/install-vault.sh` - Vault Helm (dev) и Agent Injector;
+- `scripts-tofu/install-vault.sh` - Vault Helm (standalone, PVC, unseal) и Agent Injector;
 - `scripts-tofu/configure-vault.sh` - Kubernetes auth, policy, роль, учебный KV.
 
 Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.

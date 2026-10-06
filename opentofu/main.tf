@@ -29,6 +29,7 @@ locals {
   ssh_private_key_path = pathexpand("~/.ssh/id_rsa_tofu")
   vault_script_path    = "${local.scripts_dir}/install-vault.sh"
   vault_ingress_path   = abspath("${path.root}/../manifests/vault-ingress.yaml")
+  vault_values_path    = abspath("${path.root}/../manifests/vault/helm-values.yaml")
   configure_vault_script_path = "${local.scripts_dir}/configure-vault.sh"
   vault_policy_path    = abspath("${path.root}/../manifests/vault/policy.hcl")
   vault_test_pod_path  = abspath("${path.root}/../manifests/vault/test-pod.yaml")
@@ -309,9 +310,10 @@ resource "null_resource" "install_vault" {
   depends_on = [null_resource.install_ingress] # Зависит от Ingress-контроллера
 
   triggers = {
-    master_ip  = module.master_vm.ip
-    script_sha = filesha256(local.vault_script_path)
+    master_ip   = module.master_vm.ip
+    script_sha  = filesha256(local.vault_script_path)
     ingress_sha = filesha256(local.vault_ingress_path)
+    values_sha  = filesha256(local.vault_values_path)
   }
 
   connection {
@@ -319,7 +321,7 @@ resource "null_resource" "install_vault" {
     user    = "ubuntu"
     host    = module.master_vm.ip
     agent   = true
-    timeout = "10m"
+    timeout = "15m"
   }
 
   # Копируем скрипт
@@ -334,10 +336,15 @@ resource "null_resource" "install_vault" {
     destination = "/tmp/vault-ingress.yaml"
   }
 
+  provisioner "file" {
+    content     = file(local.vault_values_path)
+    destination = "/tmp/vault-values.yaml"
+  }
+
   # Выполняем установку и применяем Ingress
   provisioner "remote-exec" {
     inline = [
-      "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml",
+      "sed -i 's/\\r$//' /tmp/install-vault.sh /tmp/vault-ingress.yaml /tmp/vault-values.yaml",
       "chmod +x /tmp/install-vault.sh",
       "/tmp/install-vault.sh"
     ]
@@ -348,9 +355,10 @@ resource "null_resource" "configure_vault" {
   depends_on = [null_resource.install_vault]
 
   triggers = {
-    master_ip  = module.master_vm.ip
-    script_sha = filesha256(local.configure_vault_script_path)
-    policy_sha = filesha256(local.vault_policy_path)
+    master_ip     = module.master_vm.ip
+    script_sha    = filesha256(local.configure_vault_script_path)
+    policy_sha    = filesha256(local.vault_policy_path)
+    vault_install = null_resource.install_vault.id
   }
 
   connection {
@@ -389,6 +397,7 @@ resource "null_resource" "test_vault_integration" {
   triggers = {
     master_ip = module.master_vm.ip
     pod_sha   = filesha256(local.vault_test_pod_path)
+    vault_cfg = null_resource.configure_vault.id
   }
 
   connection {
@@ -407,6 +416,7 @@ resource "null_resource" "test_vault_integration" {
   provisioner "remote-exec" {
     inline = [
       "sed -i 's/\\r$//' /tmp/test-pod.yaml",
+      "kubectl delete pod test-vault-pod -n default --ignore-not-found",
       "kubectl apply -f /tmp/test-pod.yaml",
       "sleep 15",
       "kubectl logs test-vault-pod -n default || true"

@@ -1,0 +1,13 @@
+# Учебный standalone (не -dev). Конфиг listener/storage - дефолт chart:
+# file storage на /vault/data, TLS выключен.
+injector:
+  enabled: true
+server:
+  dev:
+    enabled: false
+  standalone:
+    enabled: true
+  dataStorage:
+    enabled: true
+    size: 1Gi
+    storageClass: local-path

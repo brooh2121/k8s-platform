@@ -84,7 +84,7 @@
 ### OpenTofu и Terraform
 
 Параллельно bash-скриптам появился IaC-контур:
-- `opentofu/` создает VM, ставит Kubernetes, CNI, MetalLB, Ingress, ArgoCD, RBAC и Vault (dev + injector);
+- `opentofu/` создает VM, ставит Kubernetes, CNI, MetalLB, Ingress, ArgoCD, RBAC и Vault (standalone + injector);
 - `terraform/` только создает те же три VM без установки Kubernetes.
 
 Подробности: `docs/terraform/01-opentofu.md`, Vault: `docs/terraform/08-vault.md` и `docs/terraform/09-vault-injector.md`.
