@@ -8,7 +8,9 @@ PAT лежит локально в `~/.arc-token` (WSL home, не в Git). Tofu 
 
 ## Назначение
 
-Поставить GitHub Actions Runner Controller (charts `gha-runner-scale-set-controller` и `gha-runner-scale-set`) и зарегистрировать scale set на организацию `https://github.com/brooh2121`.
+Поставить GitHub Actions Runner Controller (charts `gha-runner-scale-set-controller` и `gha-runner-scale-set`) и зарегистрировать scale set на репозиторий `https://github.com/brooh2121/github-actions-pipeline`.
+
+Self-hosted runner на весь аккаунт GitHub без org нельзя: нужен URL конкретного репозитория (или org, если это организация).
 
 Это не старый `actions-runner-controller` с cert-manager. Новый стек: controller в `arc-systems`, раннеры в `arc-runners`.
 
@@ -24,7 +26,9 @@ Helm release называется `arc`. Deployment контроллера в а
 
 Файл `~/.arc-token` на машине, откуда идёт `tofu apply` (WSL). Нужны права на создание self-hosted runners в org/repo.
 
-Org URL `https://github.com/brooh2121` требует org-level PAT (или classic token с `admin:org` / fine-grained: Administration на org runners). Для одного репозитория URL был бы `https://github.com/brooh2121/k8s-platform`.
+`githubConfigUrl` - репозиторий, не пользователь. Helm `--set` пишется `key=value`, не `key: value` (иначе chart-аргумент теряется и `helm upgrade` отвечает "requires 2 arguments").
+
+PAT: classic с `repo` (и право на self-hosted runners) или fine-grained на этот репозиторий. После смены URL в скрипте `script_sha` меняется, `tofu apply` заново гоняет `install_arc`.
 
 ## Проверка
 

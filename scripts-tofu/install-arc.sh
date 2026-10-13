@@ -57,10 +57,12 @@ kubectl create secret generic arc-github-secret \
   --from-literal=github_token="$PAT" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo "[ARC] Installing runner scale set..."
+# PAT регистрирует runner на репозиторий, не на весь аккаунт GitHub.
+GITHUB_CONFIG_URL="https://github.com/brooh2121/github-actions-pipeline"
+echo "[ARC] Installing runner scale set for ${GITHUB_CONFIG_URL}..."
 helm upgrade --install arc-runner-set \
   --namespace arc-runners \
-  --set githubConfigUrl: "https://github.com/brooh2121/github-actions-pipeline" \
+  --set githubConfigUrl="${GITHUB_CONFIG_URL}" \
   --set githubConfigSecret="arc-github-secret" \
   --set runnerScaleSetName="arc-runner-set" \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
