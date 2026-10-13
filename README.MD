@@ -65,4 +65,5 @@
 - `docs/terraform/06-rbac.md` - RBAC через OpenTofu;
 - `docs/terraform/07-test-rbac.md` - проверка RBAC через `kubectl auth can-i`;
 - `docs/terraform/08-vault.md` - HashiCorp Vault (Helm, standalone, PVC, unseal);
-- `docs/terraform/09-vault-injector.md` - Kubernetes auth, политика и учебный Pod.
+- `docs/terraform/09-vault-injector.md` - Kubernetes auth, политика и учебный Pod;
+- `docs/terraform/10-arc.md` - Actions Runner Controller (Helm, PAT, scale set).

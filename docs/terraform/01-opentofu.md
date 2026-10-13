@@ -9,7 +9,8 @@
 - `scripts-tofu/install-ingress.sh` - NGINX Ingress Controller;
 - `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`;
 - `scripts-tofu/install-vault.sh` - Vault Helm (standalone, PVC, unseal) и Agent Injector;
-- `scripts-tofu/configure-vault.sh` - Kubernetes auth, policy, роль, учебный KV.
+- `scripts-tofu/configure-vault.sh` - Kubernetes auth, policy, роль, учебный KV;
+- `scripts-tofu/install-arc.sh` - GitHub Actions Runner Controller (ARC).
 
 Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.
 
