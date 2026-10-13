@@ -60,7 +60,7 @@ kubectl create secret generic arc-github-secret \
 echo "[ARC] Installing runner scale set..."
 helm upgrade --install arc-runner-set \
   --namespace arc-runners \
-  --set githubConfigUrl="https://github.com/brooh2121" \
+  --set githubConfigUrl: "https://github.com/brooh2121/github-actions-pipeline" \
   --set githubConfigSecret="arc-github-secret" \
   --set runnerScaleSetName="arc-runner-set" \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
