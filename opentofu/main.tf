@@ -34,6 +34,7 @@ locals {
   configure_vault_script_path = "${local.scripts_dir}/configure-vault.sh"
   vault_policy_path    = abspath("${path.root}/../manifests/vault/policy.hcl")
   vault_test_pod_path  = abspath("${path.root}/../manifests/vault/test-pod.yaml")
+  arc_script_path = "${local.scripts_dir}/install-arc.sh"
 }
 
 module "master_vm" {
@@ -427,6 +428,44 @@ resource "null_resource" "test_vault_integration" {
       "kubectl apply -f /tmp/test-pod.yaml",
       "sleep 15",
       "kubectl logs test-vault-pod -n default || true"
+    ]
+  }
+}
+
+# Ресурс:
+resource "null_resource" "install_arc" {
+  depends_on = [null_resource.install_ingress]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.arc_script_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "15m"
+  }
+
+  # Копируем скрипт
+  provisioner "file" {
+    content     = file(local.arc_script_path)
+    destination = "/tmp/install-arc.sh"
+  }
+
+  # Копируем PAT (хранится локально, не в Git)
+  provisioner "file" {
+    source      = pathexpand("~/.arc-token")
+    destination = "/tmp/arc-token.txt"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-arc.sh /tmp/arc-token.txt",
+      "chmod +x /tmp/install-arc.sh",
+      "/tmp/install-arc.sh"
     ]
   }
 }
