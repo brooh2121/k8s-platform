@@ -2,7 +2,7 @@
 
 Скрипт: `scripts-tofu/install-arc.sh`
 
-Ресурс: `null_resource.install_arc` в `opentofu/main.tf`
+Ресурс: `null_resource.install_arc` в `opentofu/main.tf` (`depends_on` только Ingress).
 
 PAT лежит локально в `~/.arc-token` (WSL home, не в Git). Tofu копирует его на master как `/tmp/arc-token.txt`.
 
@@ -14,7 +14,11 @@ Self-hosted runner на весь аккаунт GitHub без org нельзя: 
 
 Это не старый `actions-runner-controller` с cert-manager. Новый стек: controller в `arc-systems`, раннеры в `arc-runners`.
 
-## Почему падал apply
+## Почему не было namespace arc-systems
+
+Скрипт раньше выходил на `helm not found` **до** `kubectl create namespace`. Helm ставит `install-vault.sh`, ARC с ним в одном apply параллелен. Плюс SSH от tofu может не видеть `/usr/local/bin/helm`. Теперь ARC сам ставит Helm при необходимости и добавляет этот каталог в `PATH`.
+
+## Почему падал apply (имя Deployment)
 
 Helm release называется `arc`. Deployment контроллера в актуальном chart: **`arc-gha-rs-controller`**.
 

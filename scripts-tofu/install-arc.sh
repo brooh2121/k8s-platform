@@ -11,13 +11,29 @@
 # ============================================
 
 set -e
+trap 'echo "[ARC] ERROR line $LINENO exit $?"' ERR
+
+# tofu remote-exec часто без /usr/local/bin; Helm ставит Vault, ARC идёт параллельно с ним.
+export PATH="/usr/local/bin:$PATH"
 
 echo "[ARC] Installing Actions Runner Controller..."
 
-if ! command -v helm >/dev/null 2>&1; then
-    echo "[ARC] ERROR: helm not found on master."
-    exit 1
-fi
+install_helm() {
+    if command -v helm >/dev/null 2>&1; then
+        echo "[ARC] Helm already installed: $(helm version --short)"
+        return
+    fi
+    echo "[ARC] Helm not found, installing..."
+    HELM_VERSION="v3.16.4"
+    curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+    tar -xzf /tmp/helm.tgz -C /tmp
+    sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
+    rm -rf /tmp/helm.tgz /tmp/linux-amd64
+    hash -r
+    helm version --short
+}
+
+install_helm
 
 if [ ! -f /tmp/arc-token.txt ]; then
     echo "[ARC] ERROR: /tmp/arc-token.txt not found."
