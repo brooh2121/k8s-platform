@@ -20,7 +20,9 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
 # Установка kubeadm, kubelet, kubectl
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# --batch/--yes: иначе gpg ждёт overwrite, если ключ уже есть (повторный tofu apply).
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirror.yandex.ru/mirrors/pkgs.k8s.io/core/stable/v1.36/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
@@ -50,17 +52,18 @@ sudo systemctl restart containerd
 
 # Логика для мастера или воркера
 if [ "$NODE_TYPE" == "master" ]; then
-    # Инициализация кластера
-    sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
+    if [ -f /etc/kubernetes/admin.conf ]; then
+        echo "[k8s] control-plane already initialized, skip kubeadm init."
+    else
+        sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --image-repository=registry.aliyuncs.com/google_containers
+    fi
 
-    # Настройка kubectl для пользователя ubuntu (и root)
     mkdir -p /home/ubuntu/.kube
-    sudo cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+    sudo cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
     sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
 
-    # Также настраиваем для root (на случай, если команды запускаются от root)
     mkdir -p /root/.kube
-    sudo cp -i /etc/kubernetes/admin.conf /root/.kube/config
+    sudo cp /etc/kubernetes/admin.conf /root/.kube/config
     sudo chown root:root /root/.kube/config
 
     # Сохраняем команду join
@@ -86,6 +89,10 @@ elif [ "$NODE_TYPE" == "worker" ]; then
         exit 1
     fi
 
-    echo "Joining cluster with: $JOIN_COMMAND"
-    sudo $JOIN_COMMAND
+    if [ -f /etc/kubernetes/kubelet.conf ]; then
+        echo "[k8s] worker already joined, skip kubeadm join."
+    else
+        echo "Joining cluster with: $JOIN_COMMAND"
+        sudo $JOIN_COMMAND
+    fi
 fi
