@@ -42,7 +42,7 @@ module "master_vm" {
   name   = "k8s-master"
   cpus   = 2
   memory = "2G"
-  disk   = "10G"
+  disk   = "20G"
 }
 
 module "worker1_vm" {
@@ -50,7 +50,7 @@ module "worker1_vm" {
   name   = "k8s-worker1"
   cpus   = 2
   memory = "2G"
-  disk   = "10G"
+  disk   = "20G"
 }
 
 module "worker2_vm" {
@@ -58,7 +58,7 @@ module "worker2_vm" {
   name   = "k8s-worker2"
   cpus   = 2
   memory = "2G"
-  disk   = "10G"
+  disk   = "20G"
 }
 
 resource "null_resource" "master_ready" {
