@@ -81,18 +81,36 @@ elif [ "$NODE_TYPE" == "worker" ]; then
         exit 1
     fi
 
+    NODE_NAME=$(hostname)
     echo "Fetching join command from master $MASTER_IP..."
-    JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$KEY_FILE" ubuntu@"$MASTER_IP" "cat /tmp/join-command")
+    JOIN_COMMAND=""
+    for i in $(seq 1 12); do
+        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          -o LogLevel=ERROR -i "$KEY_FILE" ubuntu@"$MASTER_IP" \
+          "cat /tmp/join-command 2>/dev/null" | tr -d '\r' | tail -n 1)
+        if echo "$JOIN_COMMAND" | grep -q '^kubeadm join '; then
+            break
+        fi
+        echo "  join-command not ready (attempt $i)..."
+        sleep 5
+    done
 
-    if [ -z "$JOIN_COMMAND" ]; then
-        echo "[ERROR] Join command from master is empty."
+    if ! echo "$JOIN_COMMAND" | grep -q '^kubeadm join '; then
+        echo "[ERROR] Join command from master is empty or invalid: [$JOIN_COMMAND]"
         exit 1
     fi
 
-    if [ -f /etc/kubernetes/kubelet.conf ]; then
-        echo "[k8s] worker already joined, skip kubeadm join."
+    # kubelet.conf бывает после НЕУДАЧНОГО join. Смотрим API, не файл.
+    if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+         -o LogLevel=ERROR -i "$KEY_FILE" ubuntu@"$MASTER_IP" \
+         "kubectl get node $NODE_NAME -o name" >/dev/null 2>&1; then
+        echo "[k8s] node $NODE_NAME already in cluster, skip kubeadm join."
     else
+        if [ -f /etc/kubernetes/kubelet.conf ]; then
+            echo "[k8s] leftover kubelet.conf, kubeadm reset then join..."
+            sudo kubeadm reset -f
+        fi
         echo "Joining cluster with: $JOIN_COMMAND"
-        sudo $JOIN_COMMAND
+        sudo bash -lc "$JOIN_COMMAND"
     fi
 fi

@@ -79,8 +79,9 @@ Flannel зависит только от master. ArgoCD: `docs/terraform/04-argo
 - пишет join-команду в `/tmp/join-command`.
 
 На worker:
-- по SSH забирает `/tmp/join-command` с master (ключ `id_rsa_tofu`);
-- выполняет `kubeadm join`.
+- по SSH забирает `/tmp/join-command` с master (ключ `id_rsa_tofu`), без SSH-banner в команде;
+- skip join только если `kubectl get node $(hostname)` на master уже видит ноду (не по наличию `kubelet.conf`: файл остаётся и после неудачного join);
+- иначе `kubeadm reset` при leftover-конфиге и `kubeadm join`.
 
 ## Windows Git + WSL apply
 

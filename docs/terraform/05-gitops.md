@@ -32,11 +32,13 @@ multipass exec k8s-master -- kubectl get endpoints -n argocd argocd-repo-server
 
 ## Что делает скрипт
 
-1. Ставит `argocd` CLI в `/usr/local/bin`.
-2. Ждет Available у `argocd-repo-server`.
-3. Логинится через `argocd login --port-forward` (без IP MetalLB и без правки kubeconfig).
-4. Добавляет GitHub-репозиторий и Application `nginx`.
-5. Делает `argocd app sync`.
+1. Ждёт Available у `argocd-repo-server`, `argocd-server` и application-controller.
+2. Применяет CR `Application` `nginx` через `kubectl` (без `argocd login`).
+3. Один раз патчит `operation.sync`.
+
+`argocd login --port-forward` в CLI v3 требует адрес SERVER; `--core` писал kubeconfig и падал на `config.lock`. Из-за `exit 1` tofu не показывал тело ошибки. Worker join тут ни при чём: в логе `k8s_worker2` уже Creation complete, падает следующий ресурс.
+
+Повторный join worker уже пропускается, если есть `/etc/kubernetes/kubelet.conf`. Падение GitOps **не** повод делать `tofu destroy`.
 
 Запускается от `ubuntu`, не через `sudo`.
 
