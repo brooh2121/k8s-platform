@@ -30,27 +30,18 @@ kubectl wait -n "$NAMESPACE" --for=condition=available deployment/argocd-repo-se
 echo "[GitOps] Getting admin password..."
 ARGOCD_PASSWORD=$(kubectl -n $NAMESPACE get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
-# 4. Определяем адрес ArgoCD-сервера (LoadBalancer IP)
-echo "[GitOps] Waiting for LoadBalancer IP..."
-ARGOCD_IP=""
-for i in {1..20}; do
-    ARGOCD_IP=$(kubectl get svc argocd-server -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-    if [ -n "$ARGOCD_IP" ]; then
-        break
-    fi
-    echo "  Waiting for argocd-server IP (attempt $i)..."
-    sleep 3
-done
-if [ -z "$ARGOCD_IP" ]; then
-    echo "[ERROR] argocd-server has no LoadBalancer IP."
-    exit 1
-fi
-ARGOCD_SERVER="${ARGOCD_IP}:443"
-echo "[GitOps] Using ArgoCD server: $ARGOCD_SERVER"
+# 4. CLI с master ходит в API (--core), без LoadBalancer.
+# LB нужен людям/UI. Pending при живых подах MetalLB = нет IPAddressPool.
+echo "[GitOps] Logging in via kubeconfig (--core)..."
+kubectl config set-context --current --namespace="$NAMESPACE" >/dev/null
+argocd login --core
 
-# 5. Логинимся в ArgoCD
-echo "[GitOps] Logging in to ArgoCD..."
-argocd login "$ARGOCD_SERVER" --username admin --password "$ARGOCD_PASSWORD" --insecure --grpc-web
+LB_IP=$(kubectl get svc argocd-server -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+if [ -z "$LB_IP" ]; then
+    echo "[GitOps] argocd-server LoadBalancer still pending (UI later). Check:"
+    kubectl get svc argocd-server -n "$NAMESPACE"
+    kubectl get ipaddresspools -n metallb-system || true
+fi
 
 # 6. Добавляем репозиторий
 echo "[GitOps] Adding Git repository..."
@@ -78,5 +69,8 @@ echo ""
 echo "=== GitOps Setup Complete ==="
 echo "Application : $APP_NAME"
 echo "Repository  : $REPO_URL"
-echo "ArgoCD URL  : https://$ARGOCD_SERVER"
+echo "ArgoCD CLI  : argocd login --core (kubeconfig)"
+if [ -n "$LB_IP" ]; then
+    echo "ArgoCD UI   : https://${LB_IP}"
+fi
 echo "=================================="

@@ -34,8 +34,21 @@ multipass exec k8s-master -- kubectl get endpoints -n argocd argocd-repo-server
 
 1. Ставит `argocd` CLI в `/usr/local/bin`.
 2. Ждет Available у `argocd-repo-server`.
-3. Логинится на LoadBalancer IP `argocd-server:443`.
+3. Логинится через `argocd login --core` (kubeconfig на master, без IP MetalLB).
 4. Добавляет GitHub-репозиторий и Application `nginx`.
 5. Делает `argocd app sync`.
 
 Запускается от `ubuntu`, не через `sudo`.
+
+## LoadBalancer IP и GitOps
+
+`setup-gitops` больше не падает, если у `argocd-server` нет External IP. CLI с master не нужен LB.
+
+Если UI/Ingress в `<pending>`, а поды `metallb-system` Running - смотрите пул, не длину цикла ожидания:
+
+```
+multipass exec k8s-master -- kubectl get ipaddresspools,l2advertisements -n metallb-system
+multipass exec k8s-master -- kubectl get svc -n argocd argocd-server
+```
+
+Пустой пул: `install-metallb.sh` применил манифест MetalLB, а `IPAddressPool` не прошёл вебхук (ошибка глоталась, скрипт выходил 0). Скрипт теперь берёт `InternalIP` control-plane (не `hostname -I`) и падает, если пул не создался.

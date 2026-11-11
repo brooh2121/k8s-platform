@@ -1,31 +1,35 @@
 #!/bin/bash
+# ============================================
+# Установка MetalLB (L2) на master
+# ============================================
+# hostname -I даёт несколько адресов (docker0, Flannel).
+# Пул берём из InternalIP ноды, иначе L2 объявляет чужую подсеть.
+# Apply пула без пула = LoadBalancer навсегда Pending.
+# Если вебхук ещё не готов, kubectl apply падает; цикл не должен
+# проглатывать ошибку и выходить 0.
+# ============================================
+
 set -e
 
 echo "[MetalLB] Installing MetalLB..."
 
-# 1. Устанавливаем MetalLB
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml
 
-# 2. Ждём, пока поды MetalLB запустятся
-echo "[MetalLB] Waiting for MetalLB pods to be ready..."
-for i in {1..20}; do
-    READY=$(kubectl get pods -n metallb-system --no-headers 2>/dev/null | grep -c "Running" || echo 0)
-    TOTAL=$(kubectl get pods -n metallb-system --no-headers 2>/dev/null | wc -l || echo 0)
-    if [ "$READY" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
-        echo "[MetalLB] All pods are running."
-        break
-    fi
-    echo "  Waiting for MetalLB pods (attempt $i)..."
-    sleep 5
-done
+echo "[MetalLB] Waiting for CRDs and controller..."
+kubectl wait --for=condition=established crd/ipaddresspools.metallb.io --timeout=120s
+kubectl wait --for=condition=established crd/l2advertisements.metallb.io --timeout=120s
+kubectl wait -n metallb-system --for=condition=available deployment/controller --timeout=180s
+kubectl rollout status daemonset/speaker -n metallb-system --timeout=180s
 
-# 3. Определяем подсеть
-MASTER_IP=$(hostname -I | awk '{print $1}')
-SUBNET=$(echo $MASTER_IP | cut -d. -f1-3)
-echo "[MetalLB] Detected subnet: $SUBNET.0/24"
-
-# 4. Создаём IP-пул с повторными попытками (пока вебхук не проснётся)
-echo "[MetalLB] Applying IPAddressPool and L2Advertisement (retry until webhook is ready)..."
+NODE_IP=$(kubectl get node -l node-role.kubernetes.io/control-plane \
+  -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+if [ -z "$NODE_IP" ]; then
+    echo "[MetalLB] ERROR: cannot read control-plane InternalIP."
+    kubectl get nodes -o wide
+    exit 1
+fi
+SUBNET=$(echo "$NODE_IP" | cut -d. -f1-3)
+echo "[MetalLB] Node InternalIP: $NODE_IP, pool ${SUBNET}.240-${SUBNET}.250"
 
 POOL_MANIFEST=$(cat <<EOF
 apiVersion: metallb.io/v1beta1
@@ -35,7 +39,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - $SUBNET.240-$SUBNET.250
+  - ${SUBNET}.240-${SUBNET}.250
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -48,15 +52,23 @@ spec:
 EOF
 )
 
-for i in {1..30}; do
-    if echo "$POOL_MANIFEST" | kubectl apply -f - 2>/dev/null; then
-        echo "[MetalLB] IPAddressPool and L2Advertisement applied successfully."
+echo "[MetalLB] Applying IPAddressPool and L2Advertisement..."
+APPLIED=0
+for i in $(seq 1 30); do
+    if echo "$POOL_MANIFEST" | kubectl apply -f -; then
+        APPLIED=1
         break
     fi
-    echo "  Waiting for MetalLB webhook to be ready (attempt $i)..."
+    echo "  Waiting for MetalLB webhook (attempt $i)..."
     sleep 5
 done
+if [ "$APPLIED" -ne 1 ]; then
+    echo "[MetalLB] ERROR: failed to apply IPAddressPool."
+    kubectl get pods -n metallb-system -o wide
+    kubectl logs -n metallb-system -l app=metallb,component=controller --tail=50 || true
+    exit 1
+fi
 
-echo "[MetalLB] MetalLB installed and configured."
+kubectl get ipaddresspools,l2advertisements -n metallb-system
 kubectl get pods -n metallb-system
-kubectl get ipaddresspools -n metallb-system
+echo "[MetalLB] MetalLB installed and configured."
