@@ -34,7 +34,7 @@ multipass exec k8s-master -- kubectl get endpoints -n argocd argocd-repo-server
 
 1. Ставит `argocd` CLI в `/usr/local/bin`.
 2. Ждет Available у `argocd-repo-server`.
-3. Логинится через `argocd login --core` (kubeconfig на master, без IP MetalLB).
+3. Логинится через `argocd login --port-forward` (без IP MetalLB и без правки kubeconfig).
 4. Добавляет GitHub-репозиторий и Application `nginx`.
 5. Делает `argocd app sync`.
 
@@ -42,7 +42,11 @@ multipass exec k8s-master -- kubectl get endpoints -n argocd argocd-repo-server
 
 ## LoadBalancer IP и GitOps
 
-`setup-gitops` больше не падает, если у `argocd-server` нет External IP. CLI с master не нужен LB.
+`setup-gitops` не зависит от External IP. CLI с master ходит через port-forward.
+
+`kubectl config set-context` на этом стенде падает: `/home/ubuntu/.kube` создаётся от root при `kubeadm init`, `config.lock` ubuntu записать не может. Из-за этого GitOps мог выйти с кодом 1, а ARC всё равно ставился (`depends_on` только Ingress).
+
+`install-k8s-node.sh` теперь делает `chown -R ubuntu:ubuntu` на каталог `.kube`.
 
 Если UI/Ingress в `<pending>`, а поды `metallb-system` Running - смотрите пул, не длину цикла ожидания:
 

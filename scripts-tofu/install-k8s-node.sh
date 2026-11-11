@@ -56,7 +56,7 @@ if [ "$NODE_TYPE" == "master" ]; then
     # Настройка kubectl для пользователя ubuntu (и root)
     mkdir -p /home/ubuntu/.kube
     sudo cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-    sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
+    sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
 
     # Также настраиваем для root (на случай, если команды запускаются от root)
     mkdir -p /root/.kube
