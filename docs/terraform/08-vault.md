@@ -15,7 +15,7 @@
 
 ## Назначение
 
-Поставить Vault в namespace `vault` в режиме **standalone** (file storage на PVC), не `-dev`.
+Поставить Vault в namespace `vault` в режиме **standalone** (file storage на PVC), не `-dev`. Это один Pod `vault-0`: single-instance, без Raft и без HA.
 
 Данные на диске ноды через StorageClass `local-path`. После рестарта пода Vault снова **sealed** - Shamir, не потеря KV. Скрипт делает `operator init` (1 ключ), пишет Secret `vault-init` и ставит Deployment `vault-unsealer`, который повторяет `operator unseal`. Это автоматизация Shamir, не auto-unseal через KMS.
 

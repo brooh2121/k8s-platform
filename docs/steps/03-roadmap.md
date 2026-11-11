@@ -24,7 +24,7 @@
 - применять изменения в кластер через `ArgoCD`;
 - перейти от ручного применения манифестов к управляемому процессу доставки.
 
-Текущий результат: UI установлен и доступен. Преднастройка GitOps (репозиторий и Application `nginx`) выполнена на шаге 7. Связка с GitLab CI/CD еще впереди.
+Текущий результат: UI установлен и доступен. Преднастройка GitOps (репозиторий и Application `nginx`) выполнена на шаге 7. CI стенда - GitHub Actions через ARC, не GitLab. Автосинхронизация `Argo CD` по-прежнему выключена.
 
 ### 3. Ingress-контроллер
 
@@ -45,15 +45,17 @@
 - создано и один раз синхронизировано Application `nginx`;
 - autosync выключен (`sync-policy none`).
 
-Остается вторая часть этапа - связка с GitLab CI/CD:
-- разобрать, где заканчивается CI (сборка и публикация артефактов) и где начинается CD через `ArgoCD`;
-- при необходимости перенести или дублировать источник манифестов в GitLab.
+Раннеры уже ставятся отдельно: Actions Runner Controller на IaC-пути, scale set на репозиторий `github-actions-pipeline`. См. `docs/terraform/10-arc.md`. GitLab не используется.
 
-Ожидаемый результат полной связки: изменения в Git доходят до кластера через цепочку GitLab -> `ArgoCD` -> Kubernetes.
+Еще не сделано:
+- workflow, который публикует артефакт и меняет манифест в Git;
+- включенная синхронизация `Argo CD` (`sync-policy` сейчас `none`).
+
+Ожидаемый результат полной связки: изменения в Git доходят до кластера через цепочку GitHub Actions -> манифест -> `Argo CD` -> Kubernetes.
 
 ### 5. RBAC
 
-После GitOps и GitLab CI/CD - настройка `RBAC`.
+Этап выполнен на IaC-пути, после GitOps. Документация: `docs/terraform/06-rbac.md`.
 
 Цель этапа:
 - ограничить доступ пользователей и сервисных аккаунтов;
@@ -64,10 +66,11 @@
 
 ### 6. HashiCorp Vault
 
-Этап начат на IaC-пути (`opentofu/`). Сейчас это **standalone** (file + PVC `local-path`) плюс Vault Agent Injector:
+Этап выполнен на IaC-пути (`opentofu/`) как **один инстанс standalone** (file + PVC `local-path`, без Raft и без HA) плюс Vault Agent Injector:
 
 - Helm-chart, namespace `vault`, Ingress `vault.local`;
-- init/unseal, Kubernetes auth, политика, роль под SA `test-sa`;
+- init с одним ключом Shamir, Secret `vault-init`, Deployment `vault-unsealer` (повтор `operator unseal` после рестарта, не auto-unseal через KMS или Transit);
+- Kubernetes auth, политика, роль под SA `test-sa`;
 - учебный Pod с аннотациями injector.
 
 Документация: `docs/terraform/08-vault.md`, `docs/terraform/09-vault-injector.md`.
@@ -82,13 +85,11 @@
 
 Уже есть:
 - создание VM через провайдер Multipass;
-- установка Kubernetes на ноды через OpenTofu и `scripts-tofu/install-k8s-node.sh`;
-- установка `Flannel` через `scripts-tofu/install-flannel.sh`.
+- установка Kubernetes, `Flannel`, `MetalLB`, Ingress, `Argo CD`, RBAC, Vault и ARC через OpenTofu и `scripts-tofu/`.
 
 Еще нет:
-- параметризации корневого модуля;
-- установки `MetalLB` и платформенных компонентов через IaC;
-- одного пайплайна на весь стенд.
+- параметризации корневого модуля (`variables.tf` пустой, параметры в `main.tf`);
+- отдельного CI, который сам запускает `tofu apply` на весь стенд.
 
 Цель этапа:
 - убрать ручной запуск каждого шага по отдельности;
@@ -101,6 +102,6 @@
 ## Приоритет ближайшей работы
 
 Ближайший практический фокус:
-1. связка с GitLab CI/CD;
-2. при необходимости более реалистичный Vault (Raft, PVC, TLS);
-3. объединение шагов в единый пайплайн.
+1. workflow в `github-actions-pipeline` и синхронизация `Argo CD` (ARC уже стоит, GitLab не используется);
+2. при необходимости более реалистичный Vault (Raft HA, TLS, auto-unseal через KMS или Transit; PVC уже есть);
+3. параметры OpenTofu и один сценарий на весь стенд.

@@ -63,6 +63,6 @@ multipass exec k8s-master -- kubectl exec -n vault vault-0 -- env VAULT_TOKEN=<r
 
 ## Ограничения стенда
 
-Standalone + file + 1 unseal key - учебный шаг, не production. Нет Raft HA, TLS, auto-unseal. Secret `vault-init` в кластере хранит ключ и root token - только для лаборатории.
+Один инстанс: standalone, file storage, один ключ Shamir. Нет Raft HA и TLS. После рестарта sealed снимает Deployment `vault-unsealer` из Secret `vault-init` - это повтор `operator unseal`, не auto-unseal через KMS или Transit. Secret `vault-init` в кластере хранит ключ и root token - только для лаборатории.
 
 После удаления PVC Vault нужно инициализировать заново (скрипт это делает, если `initialized=false`). Если PVC живой, а Secret `vault-init` потерян - скрипт остановится: unseal-ключ больше негде взять.

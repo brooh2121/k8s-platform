@@ -24,10 +24,11 @@
 - установка `NGINX Ingress Controller`;
 - публикация UI `ArgoCD` через Ingress на `argocd.local`;
 - преднастройка GitOps: репозиторий `argocd-apps` и Application `nginx`;
-- учебный RBAC и HashiCorp Vault (dev, Agent Injector) на пути OpenTofu;
+- учебный RBAC и HashiCorp Vault (один инстанс standalone, file PVC, учебный unseal, Agent Injector) на пути OpenTofu;
+- Actions Runner Controller для GitHub Actions;
 - черновик IaC в `terraform/` и рабочий стек OpenTofu в `opentofu/`.
 
-Ближайшая работа: связка с GitLab CI/CD.
+CI-путь стенда - GitHub Actions через ARC (`docs/terraform/10-arc.md`), не GitLab. Автосинхронизация `Argo CD` выключена: workflow еще не меняет манифесты, которые забирает Application.
 
 ## Базовая архитектура стенда
 

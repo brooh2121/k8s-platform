@@ -84,10 +84,10 @@
 ### OpenTofu и Terraform
 
 Параллельно bash-скриптам появился IaC-контур:
-- `opentofu/` создает VM, ставит Kubernetes, CNI, MetalLB, Ingress, ArgoCD, RBAC и Vault (standalone + injector);
+- `opentofu/` создает VM, ставит Kubernetes, CNI, MetalLB, Ingress, Argo CD, RBAC, Vault (один инстанс standalone, file PVC, учебный unseal, injector) и Actions Runner Controller;
 - `terraform/` только создает те же три VM без установки Kubernetes.
 
-Подробности: `docs/terraform/01-opentofu.md`, Vault: `docs/terraform/08-vault.md` и `docs/terraform/09-vault-injector.md`.
+Подробности: `docs/terraform/01-opentofu.md`, Vault: `docs/terraform/08-vault.md` и `docs/terraform/09-vault-injector.md`, ARC: `docs/terraform/10-arc.md`.
 
 ## Что важно помнить
 
@@ -99,6 +99,6 @@
 
 ## Текущая точка остановки
 
-На данный момент `ArgoCD` установлен, UI открыт через Ingress, подключен Git-репозиторий и создано Application `nginx`. На IaC-пути есть учебный RBAC и Vault в dev с Agent Injector. Автосинхронизация выключена, GitLab CI/CD еще не подключен.
+На данный момент `Argo CD` установлен, UI открыт через Ingress, подключен Git-репозиторий и создано Application `nginx`. На IaC-пути есть учебный RBAC, Vault (один инстанс standalone, не HA) и Actions Runner Controller. Автосинхронизация выключена.
 
-Следующий блок работы - связка с GitLab CI/CD.
+CI этого стенда - GitHub Actions. ARC уже регистрирует scale set на репозиторий `github-actions-pipeline`. GitLab не используется. Следующий осмысленный шаг по доставке - workflow, который меняет манифест, и включенная синхронизация `Argo CD`.

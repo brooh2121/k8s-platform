@@ -117,7 +117,7 @@ tofu apply
 После успешного apply:
 - три VM в `Multipass`;
 - control plane инициализирован, worker-ноды присоединены;
-- установлены `Flannel`, `MetalLB`, Ingress, `ArgoCD`, учебный RBAC и Vault (dev);
+- установлены `Flannel`, `MetalLB`, Ingress, `Argo CD`, учебный RBAC, Vault (один инстанс standalone, не dev) и Actions Runner Controller;
 - `multipass exec k8s-master -- kubectl get ns argocd` и `-n vault` должны показать namespace;
 - в `opentofu/outputs` доступны IP-адреса;
 - файл `opentofu/join-command.txt` содержит команду join (если master отработал).
