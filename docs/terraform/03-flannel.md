@@ -21,13 +21,13 @@
 
 Скрипт идет от root, поэтому `kubectl` берет kubeconfig из `/root/.kube/config` (его создает `install-k8s-node.sh` на master).
 
-Образы в манифесте с `docker.io/flannel/` переписываются на `ghcr.io/flannel-io/` (тот же тег). Pull с Docker Hub на воркерах зависает на `install-cni-plugin`; без CNI нода `NotReady`.
+Манифест `v0.26.7` уже берёт образы с `ghcr.io/flannel-io`. Ранее `v0.25.6` плюс замена `docker.io` на `ghcr.io` давала несуществующий тег `flannel-cni-plugin:v1.5.1-flannel2` и BackOff на initContainer `install-cni-plugin`.
 
 Flannel ждёт join worker1 и worker2, затем `kubectl rollout status` до 10 минут.
 
 ## Что делает скрипт
 
-1. Скачивает манифест `v0.25.6`, меняет registry на ghcr.io, применяет.
+1. Скачивает официальный манифест `v0.26.7` и применяет.
 2. Ждёт Ready у DaemonSet `kube-flannel-ds` (таймаут 600s).
 3. Печатает pod'ы и nodes.
 

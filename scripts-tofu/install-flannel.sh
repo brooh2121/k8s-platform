@@ -7,12 +7,12 @@
 
 set -e
 
-# Манифест upstream тянет docker.io/flannel/*; с Docker Hub pull часто стоит минутами.
-# Те же теги публикуются на ghcr.io/flannel-io/.
-echo "[Flannel] Downloading manifest v0.25.6 and retargeting images to ghcr.io..."
+# v0.25.6 тянет docker.io; sed на ghcr.io ломает CNI-плагин: тег
+# flannel-cni-plugin:v1.5.1-flannel2 на GHCR нет, kubelet уходит в BackOff.
+# v0.26.7 уже указывает на ghcr.io/flannel-io (flannel + cni-plugin v1.6.2-flannel1).
+echo "[Flannel] Applying official kube-flannel.yml v0.26.7 (images on ghcr.io)..."
 curl -fsSL -o /tmp/kube-flannel.yml \
-  https://raw.githubusercontent.com/flannel-io/flannel/v0.25.6/Documentation/kube-flannel.yml
-sed -i 's|docker.io/flannel/|ghcr.io/flannel-io/|g' /tmp/kube-flannel.yml
+  https://raw.githubusercontent.com/flannel-io/flannel/v0.26.7/Documentation/kube-flannel.yml
 kubectl apply -f /tmp/kube-flannel.yml
 
 # Образы с docker.io (flannel-cni-plugin) на воркерах часто едут минуты.
