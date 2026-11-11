@@ -21,11 +21,13 @@
 
 Скрипт идет от root, поэтому `kubectl` берет kubeconfig из `/root/.kube/config` (его создает `install-k8s-node.sh` на master).
 
-Flannel ждёт join worker1 и worker2, затем `kubectl rollout status` до 10 минут: pull `flannel-cni-plugin` с docker.io часто дольше 10 секунд, без этого нода остаётся NotReady (`cni plugin not initialized`).
+Образы в манифесте с `docker.io/flannel/` переписываются на `ghcr.io/flannel-io/` (тот же тег). Pull с Docker Hub на воркерах зависает на `install-cni-plugin`; без CNI нода `NotReady`.
+
+Flannel ждёт join worker1 и worker2, затем `kubectl rollout status` до 10 минут.
 
 ## Что делает скрипт
 
-1. Применяет манифест Flannel версии `v0.25.6`.
+1. Скачивает манифест `v0.25.6`, меняет registry на ghcr.io, применяет.
 2. Ждёт Ready у DaemonSet `kube-flannel-ds` (таймаут 600s).
 3. Печатает pod'ы и nodes.
 
