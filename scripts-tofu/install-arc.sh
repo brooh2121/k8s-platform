@@ -65,6 +65,7 @@ helm upgrade --install arc-runner-set \
   --set githubConfigUrl="${GITHUB_CONFIG_URL}" \
   --set githubConfigSecret="arc-github-secret" \
   --set runnerScaleSetName="arc-runner-set" \
+  --set containerMode.type="dind" \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
 
 echo "[ARC] Waiting for AutoscalingRunnerSet..."
