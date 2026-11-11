@@ -70,7 +70,7 @@ resource "null_resource" "master_ready" {
 }
 
 resource "null_resource" "install_flannel" {
-  depends_on = [module.k8s_master]
+  depends_on = [module.k8s_master, module.k8s_worker1, module.k8s_worker2]
 
   # Без triggers provisioner выполняется только при создании ресурса.
   # После пересоздания VM tofu считает Flannel уже установленным и скрипт не копирует.
@@ -84,7 +84,7 @@ resource "null_resource" "install_flannel" {
     user    = "ubuntu"
     host    = module.master_vm.ip
     agent   = true
-    timeout = "5m"
+    timeout = "12m"
   }
 
   provisioner "file" {

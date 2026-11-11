@@ -48,7 +48,7 @@ tofu apply
 1. VM `k8s-master`, `k8s-worker1`, `k8s-worker2`;
 2. модуль `k8s_master` ставит Kubernetes на master;
 3. `null_resource.master_ready` копирует `/tmp/join-command` с master в `opentofu/join-command.txt`;
-4. `null_resource.install_flannel` копирует и запускает `scripts-tofu/install-flannel.sh` на master;
+4. join worker1/2, затем `null_resource.install_flannel` (ждёт DaemonSet до 10 мин);
 5. `null_resource.install_metallb` ставит MetalLB;
 6. `null_resource.install_ingress` ставит NGINX Ingress Controller;
 7. `null_resource.install_argocd` ставит ArgoCD;
@@ -58,7 +58,7 @@ tofu apply
 11. `null_resource.test_vault_integration` применяет учебный Pod;
 12. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
 
-Flannel зависит только от master. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`. Vault: `docs/terraform/08-vault.md`, injector: `docs/terraform/09-vault-injector.md`.
+Flannel зависит от master и обоих worker. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`. Vault: `docs/terraform/08-vault.md`, injector: `docs/terraform/09-vault-injector.md`.
 
 ## Скрипт install-k8s-node.sh
 

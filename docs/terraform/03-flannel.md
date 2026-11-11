@@ -21,13 +21,13 @@
 
 Скрипт идет от root, поэтому `kubectl` берет kubeconfig из `/root/.kube/config` (его создает `install-k8s-node.sh` на master).
 
-Worker-модули в `depends_on` не входят. Flannel ставится DaemonSet: если воркеры присоединятся чуть позже, агент поднимется на них сам.
+Flannel ждёт join worker1 и worker2, затем `kubectl rollout status` до 10 минут: pull `flannel-cni-plugin` с docker.io часто дольше 10 секунд, без этого нода остаётся NotReady (`cni plugin not initialized`).
 
 ## Что делает скрипт
 
 1. Применяет манифест Flannel версии `v0.25.6`.
-2. Ждет 10 секунд.
-3. Печатает pod'ы в namespace `kube-flannel`.
+2. Ждёт Ready у DaemonSet `kube-flannel-ds` (таймаут 600s).
+3. Печатает pod'ы и nodes.
 
 Версия зафиксирована, в отличие от bash-скрипта `scripts/02-install-flannel.sh`, который берет `latest`.
 
