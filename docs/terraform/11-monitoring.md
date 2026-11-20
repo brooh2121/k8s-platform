@@ -20,6 +20,12 @@ Helm при `grafana.persistence.enabled=true` **сам** создаёт PVC. Р
 
 Prometheus по умолчанию без PVC (emptyDir), диск не занимает.
 
+## Почему Grafana 2/3 и Unhealthy на /api/health
+
+PVC уже Bound. Контейнер Grafana 13 стартует, минутами грузит плагины и до `HTTP listen :3000` не доходит. Kubelet бьёт liveness, видит `connection refused`, убивает процесс. Sidecar'ы (dashboard/datasource) уже Running, поэтому 2/3.
+
+Скрипт ставит `startupProbe` на `/api/health` (до ~10 мин) и небольшие requests по CPU/RAM. Destroy не нужен: `tofu apply` обновит Deployment.
+
 ## Проверка
 
 ```
@@ -28,4 +34,4 @@ multipass exec k8s-master -- kubectl get pvc -n monitoring
 multipass exec k8s-master -- kubectl get storageclass
 ```
 
-PVC Grafana должен быть Bound, под Grafana Running.
+PVC Grafana должен быть Bound, под Grafana 3/3 Running. Первая загрузка плагинов на worker может занять несколько минут.

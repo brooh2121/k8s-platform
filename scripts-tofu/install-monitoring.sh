@@ -58,6 +58,9 @@ if [ -n "$GRAFANA_PVC" ]; then
     kubectl delete pvc -n monitoring $GRAFANA_PVC --wait=false
 fi
 
+# Grafana 13 на маленькой VM минутами регистрирует плагины и не слушает :3000.
+# Дефолтный liveness (delay 60s) убивает контейнер: connection refused, CrashLoop.
+# startupProbe держит liveness/readiness, пока /api/health не ответит (до ~10 мин).
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --set prometheus.prometheusSpec.retention=7d \
@@ -68,11 +71,15 @@ helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheu
   --set grafana.persistence.enabled=true \
   --set grafana.persistence.size=5Gi \
   --set grafana.persistence.storageClassName=local-path \
+  --set grafana.resources.requests.cpu=100m \
+  --set grafana.resources.requests.memory=256Mi \
+  --set grafana.resources.limits.memory=512Mi \
+  --set-json 'grafana.startupProbe={"httpGet":{"path":"/api/health","port":3000},"failureThreshold":60,"periodSeconds":10}' \
   --set alertmanager.alertmanagerSpec.resources.requests.memory=128Mi \
   --set prometheusOperator.resources.requests.memory=128Mi \
   --set kube-state-metrics.resources.requests.memory=64Mi \
   --set nodeExporter.resources.requests.memory=32Mi \
-  --timeout 10m \
+  --timeout 15m \
   --wait
 
 echo "[MONITORING] Waiting for pods..."
