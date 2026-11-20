@@ -46,8 +46,24 @@ install_local_path
 
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
+# tofu/helm --wait по таймауту оставляет релиз pending-upgrade.
+# Следующий apply падает: "another operation is in progress". Это Secret Helm, не процесс.
+clear_pending_helm() {
+    local secrets
+    secrets=$(kubectl get secret -n monitoring \
+      -l owner=helm,name=kube-prometheus-stack \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.labels.status}{"\n"}{end}' 2>/dev/null \
+      | awk '/pending-/ {print $1}')
+    if [ -z "$secrets" ]; then
+        return
+    fi
+    echo "[MONITORING] Clearing stuck Helm lock: $secrets"
+    kubectl delete secret -n monitoring $secrets
+}
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
+clear_pending_helm
 
 # PVC Grafana без storageClassName не биндится: default SC на kubeadm нет.
 # Уже созданный PVC без класса helm не чинит (поле почти неизменяемо) -

@@ -26,6 +26,8 @@ PVC уже Bound. Контейнер Grafana 13 стартует, минутам
 
 Скрипт ставит `startupProbe` на `/api/health` (до ~10 мин) и небольшие requests по CPU/RAM. Destroy не нужен: `tofu apply` обновит Deployment.
 
+Если apply оборвался на `helm --wait`, релиз остаётся `pending-upgrade`. Повторный apply пишет `another operation (install/upgrade/rollback) is in progress`. Живого процесса helm обычно нет: это Secret `sh.helm.release.v1.*`. Скрипт удаляет pending Secret перед `upgrade --install`.
+
 ## Проверка
 
 ```
