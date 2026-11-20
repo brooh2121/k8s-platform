@@ -10,7 +10,8 @@
 - `scripts-tofu/install-argocd.sh` - ArgoCD в namespace `argocd`;
 - `scripts-tofu/install-vault.sh` - Vault Helm (standalone, PVC, unseal) и Agent Injector;
 - `scripts-tofu/configure-vault.sh` - Kubernetes auth, policy, роль, учебный KV;
-- `scripts-tofu/install-arc.sh` - GitHub Actions Runner Controller (ARC).
+- `scripts-tofu/install-arc.sh` - GitHub Actions Runner Controller (ARC);
+- `scripts-tofu/install-monitoring.sh` - kube-prometheus-stack (Prometheus, Grafana, Alertmanager).
 
 Документация bash-пути (шаги `scripts/00` и далее) лежит в `docs/steps/`. Этот файл описывает только IaC-путь.
 
@@ -56,7 +57,8 @@ tofu apply
 9. `null_resource.install_vault` ставит Vault и injector;
 10. `null_resource.configure_vault` включает Kubernetes auth;
 11. `null_resource.test_vault_integration` применяет учебный Pod;
-12. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
+12. `null_resource.install_monitoring` ставит kube-prometheus-stack (`docs/terraform/11-monitoring.md`);
+13. модули worker-нод ставят Kubernetes и присоединяются к кластеру.
 
 Flannel зависит от master и обоих worker. ArgoCD: `docs/terraform/04-argocd.md`. Flannel: `docs/terraform/03-flannel.md`. Vault: `docs/terraform/08-vault.md`, injector: `docs/terraform/09-vault-injector.md`.
 

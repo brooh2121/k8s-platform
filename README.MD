@@ -127,4 +127,5 @@ Vault, RBAC и ARC на этом списке нет: их ставит OpenTofu
 - `docs/terraform/07-test-rbac.md` - проверка RBAC через `kubectl auth can-i`;
 - `docs/terraform/08-vault.md` - Vault standalone: один инстанс, file PVC, учебный unseal;
 - `docs/terraform/09-vault-injector.md` - Kubernetes auth, политика и учебный Pod;
-- `docs/terraform/10-arc.md` - Actions Runner Controller (Helm, PAT, scale set).
+- `docs/terraform/10-arc.md` - Actions Runner Controller (Helm, PAT, scale set);
+- `docs/terraform/11-monitoring.md` - kube-prometheus-stack: Grafana PVC на `local-path`.
