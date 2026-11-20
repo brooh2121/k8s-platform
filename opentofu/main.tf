@@ -35,6 +35,7 @@ locals {
   vault_policy_path    = abspath("${path.root}/../manifests/vault/policy.hcl")
   vault_test_pod_path  = abspath("${path.root}/../manifests/vault/test-pod.yaml")
   arc_script_path = "${local.scripts_dir}/install-arc.sh"
+  monitoring_script_path = "${local.scripts_dir}/install-monitoring.sh"
 }
 
 module "master_vm" {
@@ -466,6 +467,39 @@ resource "null_resource" "install_arc" {
       "sed -i 's/\\r$//' /tmp/install-arc.sh /tmp/arc-token.txt",
       "chmod +x /tmp/install-arc.sh",
       "/tmp/install-arc.sh"
+    ]
+  }
+}
+
+resource "null_resource" "install_monitoring" {
+  depends_on = [
+    null_resource.install_arc,
+    null_resource.install_ingress
+  ]
+
+  triggers = {
+    master_ip  = module.master_vm.ip
+    script_sha = filesha256(local.monitoring_script_path)
+  }
+
+  connection {
+    type    = "ssh"
+    user    = "ubuntu"
+    host    = module.master_vm.ip
+    agent   = true
+    timeout = "20m"
+  }
+
+  provisioner "file" {
+    content     = file(local.monitoring_script_path)
+    destination = "/tmp/install-monitoring.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sed -i 's/\\r$//' /tmp/install-monitoring.sh",
+      "chmod +x /tmp/install-monitoring.sh",
+      "/tmp/install-monitoring.sh"
     ]
   }
 }
