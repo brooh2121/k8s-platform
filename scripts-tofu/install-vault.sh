@@ -11,22 +11,29 @@
 # ============================================
 
 set -e
+trap 'echo "[Vault] ERROR line $LINENO exit $?"' ERR
+export PATH="/usr/local/bin:$PATH"
 
 echo "[Vault] Installing HashiCorp Vault (standalone)..."
 
+# Vault, ARC и monitoring ставят Helm параллельно в /tmp/helm.tgz.
+# tar при битом архиве выходит с кодом 2 - tofu показывает только remote-exec.
 install_helm() {
-    if command -v helm >/dev/null 2>&1; then
-        echo "[Vault] Helm already installed: $(helm version --short)"
-        return
-    fi
-
-    echo "[Vault] Helm not found, installing..."
-    HELM_VERSION="v3.16.4"
-    curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
-    tar -xzf /tmp/helm.tgz -C /tmp
-    sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
-    rm -rf /tmp/helm.tgz /tmp/linux-amd64
-    helm version --short
+    (
+        flock 9
+        if command -v helm >/dev/null 2>&1; then
+            echo "[Vault] Helm already installed: $(helm version --short)"
+            exit 0
+        fi
+        echo "[Vault] Helm not found, installing..."
+        HELM_VERSION="v3.16.4"
+        curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+        tar -xzf /tmp/helm.tgz -C /tmp
+        sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
+        rm -rf /tmp/helm.tgz /tmp/linux-amd64
+        hash -r
+        helm version --short
+    ) 9>/tmp/k8s-platform-helm.lock
 }
 
 install_local_path() {
@@ -149,7 +156,13 @@ print(data["root_token"])
     fi
 
     echo "[Vault] Unsealed. Root token is in secret vault/vault-init (lab only)."
-    kubectl exec -n vault vault-0 -- env VAULT_TOKEN="$ROOT" vault status
+    # CLI: 0 unsealed, 2 sealed. set -e иначе роняет remote-exec статусом 2.
+    kubectl exec -n vault vault-0 -- env VAULT_TOKEN="$ROOT" vault status || true
+    SEALED=$(vault_status_json | vault_status_field sealed)
+    if [ "$SEALED" != "no" ]; then
+        echo "[Vault] Still sealed after unseal."
+        exit 1
+    fi
 }
 
 install_helm

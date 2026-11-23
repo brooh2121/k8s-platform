@@ -16,18 +16,21 @@ export PATH="/usr/local/bin:$PATH"
 echo "[MONITORING] Installing kube-prometheus-stack..."
 
 install_helm() {
-    if command -v helm >/dev/null 2>&1; then
-        echo "[MONITORING] Helm already installed: $(helm version --short)"
-        return
-    fi
-    echo "[MONITORING] Helm not found, installing..."
-    HELM_VERSION="v3.16.4"
-    curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
-    tar -xzf /tmp/helm.tgz -C /tmp
-    sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
-    rm -rf /tmp/helm.tgz /tmp/linux-amd64
-    hash -r
-    helm version --short
+    (
+        flock 9
+        if command -v helm >/dev/null 2>&1; then
+            echo "[MONITORING] Helm already installed: $(helm version --short)"
+            exit 0
+        fi
+        echo "[MONITORING] Helm not found, installing..."
+        HELM_VERSION="v3.16.4"
+        curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+        tar -xzf /tmp/helm.tgz -C /tmp
+        sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
+        rm -rf /tmp/helm.tgz /tmp/linux-amd64
+        hash -r
+        helm version --short
+    ) 9>/tmp/k8s-platform-helm.lock
 }
 
 install_local_path() {
