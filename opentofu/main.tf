@@ -38,11 +38,14 @@ locals {
   monitoring_script_path = "${local.scripts_dir}/install-monitoring.sh"
 }
 
+# 2G RAM мало для kubeadm+etcd+apiserver и kube-prometheus-stack:
+# kswapd душит CPU, kubectl ловит TLS handshake timeout на :6443.
+# Смена cpus/memory у multipass_instance обычно пересоздаёт VM.
 module "master_vm" {
   source = "./modules/vm"
   name   = "k8s-master"
   cpus   = 2
-  memory = "2G"
+  memory = "4G"
   disk   = "20G"
 }
 
@@ -50,7 +53,7 @@ module "worker1_vm" {
   source = "./modules/vm"
   name   = "k8s-worker1"
   cpus   = 2
-  memory = "2G"
+  memory = "4G"
   disk   = "20G"
 }
 
@@ -58,7 +61,7 @@ module "worker2_vm" {
   source = "./modules/vm"
   name   = "k8s-worker2"
   cpus   = 2
-  memory = "2G"
+  memory = "4G"
   disk   = "20G"
 }
 

@@ -27,9 +27,11 @@
 - `variables.tf` - пока пустой, параметры заданы в `main.tf`.
 
 Модуль `opentofu/modules/vm`:
-- создает `multipass_instance`;
+- создает `multipass_instance` (2 CPU, 4G RAM, диск 20G);
 - пробрасывает публичный ключ `~/.ssh/id_rsa_tofu.pub` через cloud-init;
 - отдает IPv4 машины.
+
+2G RAM на мастере не хватает: apiserver уходит в memory reclaim, `kubectl` к `:6443` получает `TLS handshake timeout`. Смена `cpus`/`memory` у провайдера Multipass обычно **пересоздаёт** VM и весь кластер.
 
 Модуль `opentofu/modules/k8s-node`:
 - копирует на VM скрипт `scripts-tofu/install-k8s-node.sh`;

@@ -18,7 +18,7 @@ variable "cpus" {
 variable "memory" {
   description = "Memory (e.g., 2G, 4G)"
   type        = string
-  default     = "2G"
+  default     = "4G"
 }
 
 variable "disk" {
