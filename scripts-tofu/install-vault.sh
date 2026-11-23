@@ -16,24 +16,20 @@ export PATH="/usr/local/bin:$PATH"
 
 echo "[Vault] Installing HashiCorp Vault (standalone)..."
 
-# Vault, ARC и monitoring ставят Helm параллельно в /tmp/helm.tgz.
-# tar при битом архиве выходит с кодом 2 - tofu показывает только remote-exec.
+# Helm ставит этот скрипт первым в графе (потом ARC, потом monitoring).
 install_helm() {
-    (
-        flock 9
-        if command -v helm >/dev/null 2>&1; then
-            echo "[Vault] Helm already installed: $(helm version --short)"
-            exit 0
-        fi
-        echo "[Vault] Helm not found, installing..."
-        HELM_VERSION="v3.16.4"
-        curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
-        tar -xzf /tmp/helm.tgz -C /tmp
-        sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
-        rm -rf /tmp/helm.tgz /tmp/linux-amd64
-        hash -r
-        helm version --short
-    ) 9>/tmp/k8s-platform-helm.lock
+    if command -v helm >/dev/null 2>&1; then
+        echo "[Vault] Helm already installed: $(helm version --short)"
+        return
+    fi
+    echo "[Vault] Helm not found, installing..."
+    HELM_VERSION="v3.16.4"
+    curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+    tar -xzf /tmp/helm.tgz -C /tmp
+    sudo install -m 555 /tmp/linux-amd64/helm /usr/local/bin/helm
+    rm -rf /tmp/helm.tgz /tmp/linux-amd64
+    hash -r
+    helm version --short
 }
 
 install_local_path() {

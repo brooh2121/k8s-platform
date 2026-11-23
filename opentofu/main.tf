@@ -438,7 +438,8 @@ resource "null_resource" "test_vault_integration" {
 
 # Ресурс:
 resource "null_resource" "install_arc" {
-  depends_on = [null_resource.install_ingress]
+  # После Vault: Helm уже на ноде, нет гонки за /tmp/helm.tgz.
+  depends_on = [null_resource.install_vault]
 
   triggers = {
     master_ip  = module.master_vm.ip
@@ -475,10 +476,8 @@ resource "null_resource" "install_arc" {
 }
 
 resource "null_resource" "install_monitoring" {
-  depends_on = [
-    null_resource.install_arc,
-    null_resource.install_ingress
-  ]
+  # Ingress -> Vault (Helm, local-path) -> ARC -> monitoring.
+  depends_on = [null_resource.install_arc]
 
   triggers = {
     master_ip  = module.master_vm.ip

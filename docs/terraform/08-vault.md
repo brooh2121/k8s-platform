@@ -33,9 +33,11 @@ Chart включает **Vault Agent Injector**. Ingress `vault.local` - опц�
 
 ## Порядок install-vault.sh
 
-`terraform_NNNN.sh` в ошибке remote-exec - это обёртка provisioner (`sed` CRLF + запуск скрипта), а не отдельный инсталлятор. Код 2 почти всегда из `install-vault.sh`: `tar` на битом `/tmp/helm.tgz` (Vault/ARC/monitoring качают Helm параллельно) или `vault status`, пока sealed.
+`terraform_NNNN.sh` в ошибке remote-exec - это обёртка provisioner (`sed` CRLF + запуск скрипта), а не отдельный инсталлятор. Код 2: `tar` на битом Helm-архиве или `vault status`, пока sealed.
 
-1. Helm v3.16.4 при необходимости (flock на `/tmp/k8s-platform-helm.lock`);
+Helm ставят по графу, не параллельно: Ingress -> Vault -> ARC -> monitoring. Гонки за `/tmp/helm.tgz` нет.
+
+1. Helm v3.16.4 при необходимости;
 2. StorageClass `local-path`, если её нет;
 3. namespace `vault`;
 4. снос -dev STS, если он ещё живой;

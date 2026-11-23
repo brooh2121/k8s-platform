@@ -2,7 +2,7 @@
 
 Скрипт: `scripts-tofu/install-arc.sh`
 
-Ресурс: `null_resource.install_arc` в `opentofu/main.tf` (`depends_on` только Ingress).
+Ресурс: `null_resource.install_arc` в `opentofu/main.tf` (`depends_on` Vault, чтобы Helm уже был на ноде).
 
 PAT лежит локально в `~/.arc-token` (WSL home, не в Git). Tofu копирует его на master как `/tmp/arc-token.txt`.
 
@@ -16,7 +16,7 @@ Self-hosted runner на весь аккаунт GitHub без org нельзя: 
 
 ## Почему не было namespace arc-systems
 
-Скрипт раньше выходил на `helm not found` **до** `kubectl create namespace`. Helm ставит `install-vault.sh`, ARC с ним в одном apply параллелен. Плюс SSH от tofu может не видеть `/usr/local/bin/helm`. Теперь ARC сам ставит Helm при необходимости и добавляет этот каталог в `PATH`.
+Скрипт раньше выходил на `helm not found` **до** `kubectl create namespace`: ARC шёл параллельно с Vault и качал тот же `/tmp/helm.tgz`. Теперь `install_arc` после `install_vault`, в `PATH` есть `/usr/local/bin`. Fallback-установка Helm в скрипте остаётся, если бинаря нет.
 
 ## Почему падал apply (имя Deployment)
 

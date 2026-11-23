@@ -2,7 +2,7 @@
 
 Скрипт: `scripts-tofu/install-monitoring.sh`
 
-Ресурс: `null_resource.install_monitoring` в `opentofu/main.tf`
+Ресурс: `null_resource.install_monitoring` в `opentofu/main.tf` (после ARC, тот после Vault: Helm и `local-path` уже есть).
 
 ## Назначение
 
